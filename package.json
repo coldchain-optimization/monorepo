@@ -1,0 +1,27 @@
+{
+  "name": "looplink-monorepo",
+  "version": "1.0.0",
+  "description": "LoopLink Logistics Platform - Refactored Monorepo",
+  "private": true,
+  "scripts": {
+    "dev:backend": "cd services/backend && go run ./cmd/api/main.go",
+    "build:backend": "cd services/backend && go build -o bin/api ./cmd/api",
+    "test": "echo \"Run tests in backend: cd services/backend && go test ./...\""
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  },
+  "keywords": [
+    "logistics",
+    "delivery",
+    "matching-engine",
+    "route-optimization"
+  ],
+  "author": "LoopLink Team",
+  "license": "MIT",
+  "notes": {
+    "frontend": "Frontend apps (adminWeb, driverWeb, driverApp) are in ../old-implementation/",
+    "backend": "Go backend server is in services/backend/",
+    "development": "Start backend with: npm run dev:backend"
+  }
+}
