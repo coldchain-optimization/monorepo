@@ -59,7 +59,8 @@ class ApiClient {
 
   async getProfile(): Promise<User> {
     const res = await this.client.get('/auth/profile');
-    return res.data;
+    // Backend returns { user: User } or just User
+    return res.data.user || res.data;
   }
 
   // ── Admin endpoints ──────────────────────────────────

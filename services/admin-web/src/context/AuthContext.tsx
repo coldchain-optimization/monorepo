@@ -42,17 +42,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [token]);
 
   const login = async (data: LoginInput) => {
-    const res = await api.login(data);
-    localStorage.setItem('token', res.token);
-    setToken(res.token);
-    setUser(res.user);
+    try {
+      const res = await api.login(data);
+      if (res.token && res.user) {
+        localStorage.setItem('token', res.token);
+        setToken(res.token);
+        setUser(res.user);
+      } else {
+        throw new Error('Invalid response: missing token or user');
+      }
+    } catch (err) {
+      console.error('Login error:', err);
+      throw err;
+    }
   };
 
   const signup = async (data: SignupInput) => {
-    const res = await api.signup(data);
-    localStorage.setItem('token', res.token);
-    setToken(res.token);
-    setUser(res.user);
+    try {
+      const res = await api.signup(data);
+      if (res.token && res.user) {
+        localStorage.setItem('token', res.token);
+        setToken(res.token);
+        setUser(res.user);
+      } else {
+        throw new Error('Invalid response: missing token or user');
+      }
+    } catch (err) {
+      console.error('Signup error:', err);
+      throw err;
+    }
   };
 
   const logout = () => {

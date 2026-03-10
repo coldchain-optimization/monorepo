@@ -19,12 +19,20 @@ export default function LoginPage() {
       await login({ email, password });
       navigate('/');
     } catch (err: unknown) {
-      const msg =
-        err && typeof err === 'object' && 'response' in err
-          ? (err as { response?: { data?: { error?: string } } }).response?.data
-              ?.error
-          : undefined;
-      setError(msg || 'Login failed');
+      console.error('Login error:', err);
+      let msg = 'Login failed';
+      
+      // Handle axios error
+      if (err && typeof err === 'object') {
+        if ('response' in err) {
+          const axiosErr = err as { response?: { data?: { error?: string } } };
+          msg = axiosErr.response?.data?.error || 'Login failed';
+        } else if ('message' in err) {
+          msg = (err as { message: string }).message;
+        }
+      }
+      
+      setError(msg);
     } finally {
       setLoading(false);
     }
