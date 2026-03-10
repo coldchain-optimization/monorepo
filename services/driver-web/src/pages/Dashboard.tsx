@@ -35,7 +35,16 @@ export function Dashboard() {
           setRecentMatches([]);
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load dashboard');
+        const errMsg = err instanceof Error ? err.message : 'Failed to load dashboard';
+        
+        // Check if it's a 404 (driver not found) - redirect to registration
+        if (errMsg.includes('not found') || errMsg.includes('404')) {
+          console.log('Driver profile not found, redirecting to registration...');
+          navigate('/register-driver');
+          return;
+        }
+        
+        setError(errMsg);
         console.error('Dashboard error:', err);
       } finally {
         setLoading(false);
