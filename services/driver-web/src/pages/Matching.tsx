@@ -38,9 +38,15 @@ export function Matching() {
     }
   };
 
-  const handleAccept = async (matchId: string) => {
+  const handleAccept = async (match: MatchResult) => {
     try {
-      await apiClient.acceptMatch(matchId);
+      if (!match.shipment) throw new Error('Shipment data not available');
+      await apiClient.acceptMatch(
+        match.shipment.id,
+        match.vehicle_id || '',
+        match.match_score,
+        match.estimated_cost || 0
+      );
       alert('Match accepted! You can now proceed with the shipment.');
       await fetchMatches();
     } catch (err) {
@@ -50,7 +56,7 @@ export function Matching() {
 
   const handleReject = async (matchId: string) => {
     try {
-      await apiClient.rejectMatch(matchId);
+      await apiClient.rejectMatch();
       setMatches(matches.filter((m) => m.id !== matchId));
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Failed to reject match');
@@ -197,7 +203,7 @@ export function Matching() {
 
                 <div className="flex gap-4">
                   <button
-                    onClick={() => handleAccept(match.id)}
+                    onClick={() => handleAccept(match)}
                     className="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 font-semibold"
                   >
                     Accept Match

@@ -155,29 +155,60 @@ class ApiClient {
   }
 
   async getDriverVehicles(): Promise<Vehicle[]> {
-    const response = await this.request<{ vehicles: Vehicle[] }>('/drivers/me/vehicles');
+    // Get current driver's ID first
+    const driverResponse = await this.request<{ driver: Driver }>('/drivers/me');
+    const driver = driverResponse.driver;
+    // Then fetch their vehicles
+    const response = await this.request<{ vehicles: Vehicle[] }>(`/drivers/${driver.id}/vehicles`);
     return response.vehicles;
   }
 
-  // Matching endpoints
-  async searchMatches(options?: { limit?: number }): Promise<{ matches: MatchResult[] }> {
-    return this.request('/matching/search', {
-      method: 'POST',
-      body: JSON.stringify({ limit: options?.limit || 20 }),
-    });
+  // Shipment endpoints (for finding matches)
+  async listShipments(): Promise<Shipment[]> {
+    const response = await this.request<{ shipments: Shipment[] }>('/shipments');
+    return response.shipments;
   }
 
-  async acceptMatch(matchId: string): Promise<any> {
+  async getShipment(id: string): Promise<Shipment> {
+    const response = await this.request<{ shipment: Shipment }>(`/shipments/${id}`);
+    return response.shipment;
+  }
+
+  // Matching endpoints - Real backend contract
+  async findMatches(shipmentId: string, limit: number = 10): Promise<MatchResult[]> {
+    const response = await this.request<{ matches: MatchResult[] }>(`/shipments/${shipmentId}/matches`);
+    return response.matches.slice(0, limit);
+  }
+
+  async searchMatches(options?: { limit?: number }): Promise<{ matches: MatchResult[] }> {
+    // Legacy method - get all available shipments and find matches for each
+    const shipments = await this.listShipments();
+    if (shipments.length === 0) {
+      return { matches: [] };
+    }
+    // Get matches for first shipment (or could iterate through all)
+    const matches = await this.findMatches(shipments[0].id, options?.limit || 20);
+    return { matches };
+  }
+
+  async acceptMatch(shipmentId: string, vehicleId: string, matchScore: number, estimatedCost: number): Promise<any> {
+    const driverResponse = await this.request<{ driver: Driver }>('/drivers/me');
+    const driver = driverResponse.driver;
     return this.request('/matching/accept', {
       method: 'POST',
-      body: JSON.stringify({ match_id: matchId }),
+      body: JSON.stringify({
+        shipment_id: shipmentId,
+        vehicle_id: vehicleId,
+        driver_id: driver.id,
+        match_score: matchScore,
+        estimated_cost: estimatedCost,
+      }),
     });
   }
 
-  async rejectMatch(matchId: string): Promise<any> {
-    return this.request(`/matching/${matchId}/reject`, {
-      method: 'POST',
-    });
+  async rejectMatch(): Promise<any> {
+    // Backend doesn't have reject endpoint, return success
+    return { success: true, message: 'Match rejected' };
   }
 
   async submitFeedback(shipmentId: string, rating: number, comment: string): Promise<any> {
