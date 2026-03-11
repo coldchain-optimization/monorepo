@@ -225,7 +225,7 @@ export function Dashboard() {
                         </span>
                       </div>
                       <p className="font-semibold text-gray-900 text-lg">
-                        {match.shipment?.source || 'Unknown'} → {match.shipment?.destination || 'Unknown'}
+                        {match.shipment?.source_location || 'Unknown'} → {match.shipment?.destination_location || 'Unknown'}
                       </p>
                     </div>
                     <span className="text-2xl font-bold text-green-600">

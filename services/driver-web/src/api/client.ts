@@ -161,11 +161,10 @@ class ApiClient {
 
   // Matching endpoints
   async searchMatches(options?: { limit?: number }): Promise<{ matches: MatchResult[] }> {
-    const params = new URLSearchParams();
-    if (options?.limit) params.append('limit', String(options.limit));
-    const queryString = params.toString();
-    const endpoint = queryString ? `/matching/search?${queryString}` : '/matching/search';
-    return this.request(endpoint);
+    return this.request('/matching/search', {
+      method: 'POST',
+      body: JSON.stringify({ limit: options?.limit || 20 }),
+    });
   }
 
   async acceptMatch(matchId: string): Promise<any> {

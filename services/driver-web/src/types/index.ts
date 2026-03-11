@@ -27,34 +27,42 @@ export interface Driver {
 export interface Vehicle {
   id: string;
   driver_id: string;
-  license_plate: string;
   vehicle_type: string;
+  license_plate: string;
+  manufacturer: string;
+  model: string;
+  year: number;
   capacity: number;
-  temperature_min?: number;
-  temperature_max?: number;
+  max_weight: number;
+  is_refrigerated: boolean;
+  temperature: number;
+  fuel_type: string;
+  carbon_footprint: number;
+  is_available: boolean;
   current_location: string;
-  is_available?: boolean;
-  created_at?: string;
-  updated_at?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Shipment {
   id: string;
   shipper_id: string;
-  source: string;
-  destination: string;
-  pickup_date: string;
-  delivery_date: string;
-  weight: number;
-  temperature_min: number;
-  temperature_max: number;
-  description: string;
-  estimated_cost?: number;
-  actual_cost?: number;
-  status?: string;
+  source_location: string;
+  destination_location: string;
+  load_weight: number;
+  load_volume: number;
+  load_type: string;
+  required_temp: number;
+  days_available: number;
+  time_window_start: string;
+  time_window_end: string;
+  status: string;
+  assigned_vehicle?: string;
+  estimated_cost: number;
+  actual_cost: number;
+  created_at: string;
+  updated_at: string;
   shipper?: Shipper;
-  created_at?: string;
-  updated_at?: string;
 }
 
 export interface Shipper {
@@ -104,17 +112,29 @@ export interface CreateDriverRequest {
 export interface CreateVehicleRequest {
   license_plate: string;
   vehicle_type: string;
+  manufacturer: string;
+  model: string;
+  year: number;
   capacity: number;
-  temperature_min: number;
-  temperature_max: number;
+  max_weight: number;
+  is_refrigerated: boolean;
+  temperature: number;
+  fuel_type: string;
+  carbon_footprint: number;
   current_location: string;
 }
 
 export interface UpdateVehicleRequest {
   license_plate?: string;
   vehicle_type?: string;
+  manufacturer?: string;
+  model?: string;
+  year?: number;
   capacity?: number;
-  temperature_min?: number;
-  temperature_max?: number;
+  max_weight?: number;
+  is_refrigerated?: boolean;
+  temperature?: number;
+  fuel_type?: string;
+  carbon_footprint?: number;
   current_location?: string;
 }

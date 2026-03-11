@@ -142,7 +142,7 @@ export function Matching() {
                   <div>
                     <div className="flex items-center gap-3 mb-2">
                       <h3 className="text-2xl font-bold text-gray-900">
-                        {match.shipment?.source} → {match.shipment?.destination}
+                        {match.shipment?.source_location} → {match.shipment?.destination_location}
                       </h3>
                       <span
                         className={`text-lg font-bold px-3 py-1 rounded ${
@@ -170,30 +170,29 @@ export function Matching() {
 
                 <div className="grid grid-cols-4 gap-4 mb-6 py-4 border-t border-b border-gray-200">
                   <div>
-                    <p className="text-gray-600 text-sm">Pickup</p>
-                    <p className="font-semibold">{match.shipment?.pickup_date}</p>
+                    <p className="text-gray-600 text-sm">Pickup Date</p>
+                    <p className="font-semibold">
+                      {new Date(match.shipment?.time_window_start || '').toLocaleDateString()}
+                    </p>
                   </div>
                   <div>
-                    <p className="text-gray-600 text-sm">Delivery</p>
+                    <p className="text-gray-600 text-sm">Delivery Date</p>
                     <p className="font-semibold">
-                      {match.shipment?.delivery_date}
+                      {new Date(match.shipment?.time_window_end || '').toLocaleDateString()}
                     </p>
                   </div>
                   <div>
                     <p className="text-gray-600 text-sm">Weight</p>
-                    <p className="font-semibold">{match.shipment?.weight}kg</p>
+                    <p className="font-semibold">{match.shipment?.load_weight}kg</p>
                   </div>
                   <div>
-                    <p className="text-gray-600 text-sm">Temp Range</p>
-                    <p className="font-semibold">
-                      {match.shipment?.temperature_min}°C -{' '}
-                      {match.shipment?.temperature_max}°C
-                    </p>
+                    <p className="text-gray-600 text-sm">Temperature</p>
+                    <p className="font-semibold">{match.shipment?.required_temp}°C</p>
                   </div>
                 </div>
 
                 <p className="text-gray-700 mb-6">
-                  {match.shipment?.description}
+                  <strong>Load Type:</strong> {match.shipment?.load_type} | <strong>Volume:</strong> {match.shipment?.load_volume}m³
                 </p>
 
                 <div className="flex gap-4">

@@ -23,14 +23,24 @@ export function Backhauling() {
   const fetchOpportunities = async () => {
     try {
       setLoading(true);
-      // For backhauling, we'd typically call an endpoint
-      // For now, we'll show how the feature would work
-      const data = await apiClient.searchMatches({ limit: 50 });
-      setOpportunities(
-        data.matches?.map((m) => m.shipment).filter((s): s is Shipment => !!s) || []
-      );
+      setError('');
+      // For backhauling, try to get available shipments
+      try {
+        const data = await apiClient.searchMatches({ limit: 50 });
+        const shipments = data.matches?.map((m) => m.shipment).filter((s): s is Shipment => !!s) || [];
+        setOpportunities(shipments);
+      } catch (matchErr) {
+        // If matches endpoint fails, that's okay - just show empty state
+        console.warn('Could not load matches for backhauling:', matchErr);
+        setOpportunities([]);
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load opportunities');
+      const errMsg = err instanceof Error ? err.message : 'Failed to load opportunities';
+      // Don't show error for 404 - just show empty state
+      if (!errMsg.includes('404')) {
+        setError(errMsg);
+      }
+      setOpportunities([]);
     } finally {
       setLoading(false);
     }
@@ -89,7 +99,7 @@ export function Backhauling() {
               <div className="flex justify-between items-start mb-4">
                 <div>
                   <h3 className="text-2xl font-bold text-gray-900">
-                    {shipment.source} → {shipment.destination}
+                    {shipment.source_location} → {shipment.destination_location}
                   </h3>
                   <p className="text-gray-600 text-sm">Shipment ID: {shipment.id}</p>
                 </div>
@@ -101,51 +111,62 @@ export function Backhauling() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-4 gap-4 py-4 border-t border-b border-gray-200 mb-4">
+              <div className="grid grid-cols-2 gap-4 py-4 border-t border-b border-gray-200 mb-4">
                 <div>
-                  <p className="text-gray-600 text-sm">Pickup Date</p>
-                  <p className="font-semibold">{shipment.pickup_date}</p>
-                </div>
-                <div>
-                  <p className="text-gray-600 text-sm">Delivery Date</p>
-                  <p className="font-semibold">{shipment.delivery_date}</p>
+                  <p className="text-gray-600 text-sm">Load Type</p>
+                  <p className="font-semibold">{shipment.load_type || 'General Cargo'}</p>
                 </div>
                 <div>
                   <p className="text-gray-600 text-sm">Weight</p>
-                  <p className="font-semibold">{shipment.weight}kg</p>
-                </div>
-                <div>
-                  <p className="text-gray-600 text-sm">Temperature</p>
-                  <p className="font-semibold">
-                    {shipment.temperature_min}°C - {shipment.temperature_max}°C
-                  </p>
+                  <p className="font-semibold">{shipment.load_weight || 0}kg</p>
                 </div>
               </div>
 
-              <div className="mb-4">
-                <p className="text-gray-700 mb-3">{shipment.description}</p>
+              <div className="grid grid-cols-2 gap-4 py-4 mb-4">
+                <div>
+                  <p className="text-gray-600 text-sm">Temperature Required</p>
+                  <p className="font-semibold">{shipment.required_temp}°C</p>
+                </div>
+                <div>
+                  <p className="text-gray-600 text-sm">Volume</p>
+                  <p className="font-semibold">{shipment.load_volume}m³</p>
+                </div>
+              </div>
 
-                <div className="bg-gray-50 p-4 rounded mb-4">
-                  <h4 className="font-semibold text-gray-900 mb-2">
-                    Shipper Details
-                  </h4>
-                  <div className="grid grid-cols-2 text-sm text-gray-600">
-                    <div>
-                      <p className="font-medium">
-                        {shipment.shipper?.user?.first_name}{' '}
-                        {shipment.shipper?.user?.last_name}
-                      </p>
-                      <p>{shipment.shipper?.user?.email}</p>
-                    </div>
-                    <div>
-                      <p className="font-medium">
-                        {shipment.shipper?.company_name}
-                      </p>
-                      <p>{shipment.shipper?.phone}</p>
-                    </div>
+              <div className="mb-4 p-4 bg-blue-50 rounded">
+                <h4 className="font-semibold text-gray-900 mb-2">Shipment Details</h4>
+                <div className="grid grid-cols-2 text-sm text-gray-600 gap-4">
+                  <div>
+                    <p className="text-xs uppercase text-gray-500 mb-1">Available Until</p>
+                    <p className="font-semibold text-gray-900">
+                      {new Date(shipment.time_window_end).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase text-gray-500 mb-1">Status</p>
+                    <p className="font-semibold text-gray-900 capitalize">{shipment.status}</p>
                   </div>
                 </div>
               </div>
+
+              {shipment.shipper && (
+                <div className="bg-gray-50 p-4 rounded mb-4">
+                  <h4 className="font-semibold text-gray-900 mb-2">Shipper Details</h4>
+                  <div className="grid grid-cols-2 text-sm text-gray-600">
+                    <div>
+                      <p className="font-medium text-gray-900">
+                        {shipment.shipper.user?.first_name || 'N/A'}{' '}
+                        {shipment.shipper.user?.last_name || ''}
+                      </p>
+                      <p>{shipment.shipper.user?.email || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900">{shipment.shipper.company_name || 'N/A'}</p>
+                      <p>{shipment.shipper.phone || 'N/A'}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <button
                 onClick={() => handleSubmitBidding(shipment.id)}

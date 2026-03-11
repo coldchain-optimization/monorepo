@@ -13,10 +13,15 @@ export function MyVehicles() {
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
     licensePlate: '',
-    vehicleType: 'delivery',
-    capacity: '1000',
-    temperatureMin: '0',
-    temperatureMax: '35',
+    vehicleType: 'refrigerated',
+    manufacturer: 'Ashok Leyland',
+    model: 'Cargo',
+    year: new Date().getFullYear(),
+    capacity: '20',
+    maxWeight: '5000',
+    isRefrigerated: true,
+    temperature: '2',
+    fuelType: 'diesel',
     currentLocation: 'New Delhi',
   });
   const [saving, setSaving] = useState(false);
@@ -57,19 +62,30 @@ export function MyVehicles() {
       await apiClient.createVehicle({
         license_plate: formData.licensePlate,
         vehicle_type: formData.vehicleType,
+        manufacturer: formData.manufacturer,
+        model: formData.model,
+        year: formData.year,
         capacity: parseInt(formData.capacity),
-        temperature_min: parseInt(formData.temperatureMin),
-        temperature_max: parseInt(formData.temperatureMax),
+        max_weight: parseInt(formData.maxWeight),
+        is_refrigerated: formData.isRefrigerated,
+        temperature: parseInt(formData.temperature),
+        fuel_type: formData.fuelType,
+        carbon_footprint: 0, // Default value, could be calculated
         current_location: formData.currentLocation,
       });
 
       setShowForm(false);
       setFormData({
         licensePlate: '',
-        vehicleType: 'delivery',
-        capacity: '1000',
-        temperatureMin: '0',
-        temperatureMax: '35',
+        vehicleType: 'refrigerated',
+        manufacturer: 'Ashok Leyland',
+        model: 'Cargo',
+        year: new Date().getFullYear(),
+        capacity: '20',
+        maxWeight: '5000',
+        isRefrigerated: true,
+        temperature: '2',
+        fuelType: 'diesel',
         currentLocation: 'New Delhi',
       });
       await fetchVehicles();
@@ -136,16 +152,59 @@ export function MyVehicles() {
                   onChange={handleChange}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 >
-                  <option value="delivery">Delivery Van</option>
+                  <option value="small">Small Van</option>
+                  <option value="medium">Medium Truck</option>
+                  <option value="large">Large Truck</option>
                   <option value="refrigerated">Refrigerated Truck</option>
-                  <option value="tanker">Tanker</option>
-                  <option value="flatbed">Flatbed</option>
                 </select>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Capacity (kg)
+                  Manufacturer
+                </label>
+                <input
+                  type="text"
+                  name="manufacturer"
+                  value={formData.manufacturer}
+                  onChange={handleChange}
+                  placeholder="Ashok Leyland"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Model
+                </label>
+                <input
+                  type="text"
+                  name="model"
+                  value={formData.model}
+                  onChange={handleChange}
+                  placeholder="Cargo"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Year
+                </label>
+                <input
+                  type="number"
+                  name="year"
+                  value={formData.year}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  min="1990"
+                  max={new Date().getFullYear()}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Capacity (m³)
                 </label>
                 <input
                   type="number"
@@ -159,6 +218,51 @@ export function MyVehicles() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Max Weight (kg)
+                </label>
+                <input
+                  type="number"
+                  name="maxWeight"
+                  value={formData.maxWeight}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Temperature (°C)
+                </label>
+                <input
+                  type="number"
+                  name="temperature"
+                  value={formData.temperature}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  placeholder="2 (for refrigerated)"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Fuel Type
+                </label>
+                <select
+                  name="fuelType"
+                  value={formData.fuelType}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option value="diesel">Diesel</option>
+                  <option value="petrol">Petrol</option>
+                  <option value="cng">CNG</option>
+                  <option value="electric">Electric</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
                   Current Location
                 </label>
                 <input
@@ -168,32 +272,6 @@ export function MyVehicles() {
                   onChange={handleChange}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Min Temperature (°C)
-                </label>
-                <input
-                  type="number"
-                  name="temperatureMin"
-                  value={formData.temperatureMin}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Max Temperature (°C)
-                </label>
-                <input
-                  type="number"
-                  name="temperatureMax"
-                  value={formData.temperatureMax}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
             </div>
@@ -228,10 +306,10 @@ export function MyVehicles() {
                   <h3 className="text-2xl font-bold text-gray-900">
                     {vehicle.license_plate}
                   </h3>
-                  <p className="text-gray-600">{vehicle.vehicle_type}</p>
+                  <p className="text-gray-600">{vehicle.manufacturer} {vehicle.model}</p>
                 </div>
                 <span className="text-lg font-bold text-indigo-600">
-                  {vehicle.capacity}kg
+                  {vehicle.max_weight}kg
                 </span>
               </div>
 
@@ -241,14 +319,33 @@ export function MyVehicles() {
                   <p className="font-semibold">{vehicle.current_location}</p>
                 </div>
                 <div>
-                  <p className="text-gray-600 text-sm">Temperature Range</p>
-                  <p className="font-semibold">
-                    {vehicle.temperature_min}°C - {vehicle.temperature_max}°C
-                  </p>
+                  <p className="text-gray-600 text-sm">Temperature</p>
+                  <p className="font-semibold">{vehicle.temperature}°C</p>
                 </div>
                 <div>
                   <p className="text-gray-600 text-sm">Status</p>
-                  <p className="font-semibold text-green-600">Active</p>
+                  <p className={`font-semibold ${vehicle.is_available ? 'text-green-600' : 'text-red-600'}`}>
+                    {vehicle.is_available ? 'Available' : 'Unavailable'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-4 gap-4 py-4 border-t border-gray-200 mb-4 text-sm">
+                <div>
+                  <p className="text-gray-600 mb-1">Type</p>
+                  <p className="font-semibold capitalize">{vehicle.vehicle_type}</p>
+                </div>
+                <div>
+                  <p className="text-gray-600 mb-1">Capacity</p>
+                  <p className="font-semibold">{vehicle.capacity}m³</p>
+                </div>
+                <div>
+                  <p className="text-gray-600 mb-1">Fuel</p>
+                  <p className="font-semibold capitalize">{vehicle.fuel_type}</p>
+                </div>
+                <div>
+                  <p className="text-gray-600 mb-1">Year</p>
+                  <p className="font-semibold">{vehicle.year}</p>
                 </div>
               </div>
 
