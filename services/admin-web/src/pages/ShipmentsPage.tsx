@@ -4,6 +4,10 @@ import type { Shipment, MatchResult, Driver, Vehicle } from '../types';
 import { Package, Search, X, Zap, CheckCircle } from 'lucide-react';
 
 export default function ShipmentsPage() {
+  const asPct = (score?: number) => {
+    const n = Number(score || 0);
+    return n <= 1 ? n * 100 : n;
+  };
   const [shipments, setShipments] = useState<Shipment[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -201,9 +205,17 @@ export default function ShipmentsPage() {
                         </span>
                         <div className="text-right">
                           <div className="text-lg font-bold text-blue-600">
-                            {(m.match_score * 100).toFixed(1)}% match
+                            {asPct(m.match_score).toFixed(1)}% match
                           </div>
-                          <div className="text-xs text-slate-500">Score: {m.match_score.toFixed(3)}</div>
+                          <div className="text-xs text-slate-500">
+                            Rule: {asPct(m.rule_score ?? m.match_score).toFixed(1)}%
+                            {m.ml_score != null ? ` · ML: ${asPct(m.ml_score).toFixed(1)}%` : ''}
+                          </div>
+                          <div className="text-xs mt-1">
+                            <span className={`px-2 py-0.5 rounded-full ${m.score_source === 'hybrid' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
+                              {m.score_source || 'rules'}
+                            </span>
+                          </div>
                         </div>
                       </div>
 
@@ -232,6 +244,25 @@ export default function ShipmentsPage() {
                               <span className="text-slate-600">Distance Fit (10%):</span>
                               <span className="font-medium text-slate-800">{(m.score_details.distance_deviation * 100).toFixed(0)}%</span>
                             </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* ML Confidence & Explanation */}
+                      {m.score_source === 'hybrid' && m.confidence != null && (
+                        <div className="bg-blue-50 rounded-lg p-3 space-y-2">
+                          <h4 className="text-xs font-semibold text-blue-800 uppercase tracking-wide">Model Insights</h4>
+                          <div className="space-y-2 text-xs">
+                            <div className="flex justify-between">
+                              <span className="text-slate-600">ML Confidence:</span>
+                              <span className="font-medium text-blue-700">{(m.confidence * 100).toFixed(0)}%</span>
+                            </div>
+                            {m.explanation && (
+                              <div className="space-y-1">
+                                <span className="text-slate-600">Reasoning:</span>
+                                <p className="text-slate-700 italic">{m.explanation}</p>
+                              </div>
+                            )}
                           </div>
                         </div>
                       )}

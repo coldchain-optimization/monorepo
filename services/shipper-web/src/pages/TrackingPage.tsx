@@ -4,6 +4,87 @@ import MapView from '../components/MapView';
 import StatusTimeline from '../components/StatusTimeline';
 import { MapPin, Clock, Truck, Thermometer, Navigation } from 'lucide-react';
 
+// Fallback cities in case API is not available
+// These should match backend's curated cities database exactly
+const FALLBACK_CITIES: Record<string, { lat: number; lng: number }> = {
+  // Western India
+  'mumbai': { lat: 19.0760, lng: 72.8777 },
+  'pune': { lat: 18.5204, lng: 73.8567 },
+  'nashik': { lat: 19.9975, lng: 75.3458 },
+  'indore': { lat: 22.7196, lng: 75.8577 },
+  'bhopal': { lat: 23.2599, lng: 77.4126 },
+  'nagpur': { lat: 21.1458, lng: 79.0882 },
+  'surat': { lat: 21.1702, lng: 72.8311 },
+  'ahmedabad': { lat: 23.0225, lng: 72.5714 },
+  'vadodara': { lat: 22.3072, lng: 73.1812 },
+  
+  // Southern India
+  'bangalore': { lat: 12.9716, lng: 77.5946 },
+  'bengaluru': { lat: 12.9716, lng: 77.5946 },
+  'hyderabad': { lat: 17.3850, lng: 78.4867 },
+  'kochi': { lat: 9.9312, lng: 76.2673 },
+  'thiruvananthapuram': { lat: 8.5241, lng: 76.9366 },
+  'trivandrum': { lat: 8.5241, lng: 76.9366 },
+  'chennai': { lat: 13.0827, lng: 80.2707 },
+  'madurai': { lat: 9.9252, lng: 78.1198 },
+  
+  // Northern India
+  'delhi': { lat: 28.7041, lng: 77.1025 },
+  'jaipur': { lat: 26.9124, lng: 75.7873 },
+  'lucknow': { lat: 26.8467, lng: 80.9462 },
+  'agra': { lat: 27.1767, lng: 78.0081 },
+  'varanasi': { lat: 25.3176, lng: 82.9739 },
+  'kanpur': { lat: 26.4499, lng: 80.3319 },
+  'chandigarh': { lat: 30.7333, lng: 76.7794 },
+  'chittorgarh': { lat: 24.8945, lng: 75.1028 },
+  'chittaurgarh': { lat: 24.8945, lng: 75.1028 },
+  'chittod': { lat: 24.8945, lng: 75.1028 },
+  
+  // Eastern India
+  'kolkata': { lat: 22.5726, lng: 88.3639 },
+  'patna': { lat: 25.5941, lng: 85.1376 },
+  'guwahati': { lat: 26.1445, lng: 91.7362 },
+};
+
+// Global city mapping - initially populated from fallback, then fetched from API
+let CITY_COORDINATES: Record<string, { lat: number; lng: number }> = FALLBACK_CITIES;
+
+function getCityCoordinates(cityName: string): { lat: number; lng: number } | null {
+  const normalized = cityName.toLowerCase().trim();
+  return CITY_COORDINATES[normalized] || null;
+}
+
+// Fetch all cities from backend API (source of truth)
+async function loadCitiesFromAPI() {
+  try {
+    const response = await api.get('/public/cities/all');
+    const { cities } = response as any;
+    
+    if (cities && Array.isArray(cities)) {
+      // Build coordinates map from API response
+      const newMap: Record<string, { lat: number; lng: number }> = {};
+      
+      cities.forEach((city: any) => {
+        const key = city.name.toLowerCase();
+        newMap[key] = { lat: city.latitude, lng: city.longitude };
+        
+        // Also add all aliases
+        if (city.aliases && Array.isArray(city.aliases)) {
+          city.aliases.forEach((alias: string) => {
+            newMap[alias.toLowerCase()] = { lat: city.latitude, lng: city.longitude };
+          });
+        }
+      });
+      
+      CITY_COORDINATES = newMap;
+      console.log(`✓ Loaded ${cities.length} cities from backend API`);
+    }
+  } catch (error) {
+    console.warn('⚠ Could not fetch cities from API, using fallback:', error);
+    // Continue using FALLBACK_CITIES
+  }
+}
+
 interface StatusEvent {
   id: string;
   shipment_id: string;
@@ -58,24 +139,22 @@ interface Shipment {
   estimated_cost: number;
 }
 
-// Mumbai to Delhi coordinates for demo (approximate)
-const ORIGIN_COORDS = { lat: 19.0760, lng: 72.8777 };
-const DESTINATION_COORDS = { lat: 28.7041, lng: 77.1025 };
-const WAYPOINTS = [
-  { lat: 22.3039, lng: 73.1305 }, // Indore
-  { lat: 23.1815, lng: 79.9864 }, // Jabalpur
-  { lat: 25.4358, lng: 81.8463 }, // Allahabad
-  { lat: 27.1767, lng: 78.0081 }, // Agra
-];
-
 export default function TrackingPage() {
   const [shipments, setShipments] = useState<Shipment[]>([]);
   const [selectedShipmentId, setSelectedShipmentId] = useState<string | null>(null);
+  const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
   const [tracking, setTracking] = useState<TrackingSummary | null>(null);
   const [trackingEvents, setTrackingEvents] = useState<TrackingEvent[]>([]);
   const [statusEvents, setStatusEvents] = useState<StatusEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [animationProgress, setAnimationProgress] = useState(0);
+  const [originCoords, setOriginCoords] = useState({ lat: 19.0760, lng: 72.8777 });
+  const [destCoords, setDestCoords] = useState({ lat: 28.7041, lng: 77.1025 });
+
+  // Load cities from backend API on component mount
+  useEffect(() => {
+    loadCitiesFromAPI();
+  }, []);
 
   // Load shipments
   useEffect(() => {
@@ -86,7 +165,9 @@ export default function TrackingPage() {
         const bookedWithAssignment = booked.filter((s: any) => s.status === 'booked' && s.assigned_vehicle);
         setShipments(bookedWithAssignment);
         if (bookedWithAssignment.length > 0) {
-          setSelectedShipmentId(bookedWithAssignment[0].id);
+          const firstShipment = bookedWithAssignment[0];
+          setSelectedShipmentId(firstShipment.id);
+          setSelectedShipment(firstShipment);
         }
       } catch (error) {
         console.error('Failed to load shipments:', error);
@@ -96,6 +177,27 @@ export default function TrackingPage() {
     };
     loadShipments();
   }, []);
+
+  // Update shipment when selection changes
+  useEffect(() => {
+    if (!selectedShipmentId) return;
+    
+    const shipment = shipments.find(s => s.id === selectedShipmentId);
+    if (shipment) {
+      setSelectedShipment(shipment);
+      
+      // Resolve coordinates for source and destination cities
+      const sourceCoords = getCityCoordinates(shipment.source_location);
+      const destCoords_new = getCityCoordinates(shipment.destination_location);
+      
+      if (sourceCoords) {
+        setOriginCoords(sourceCoords);
+      }
+      if (destCoords_new) {
+        setDestCoords(destCoords_new);
+      }
+    }
+  }, [selectedShipmentId, shipments]);
 
   // Load tracking data when shipment is selected
   useEffect(() => {
@@ -315,9 +417,12 @@ export default function TrackingPage() {
             <MapView
               latitude={tracking.latitude}
               longitude={tracking.longitude}
-              origin={ORIGIN_COORDS}
-              destination={DESTINATION_COORDS}
-              waypoints={WAYPOINTS}
+              origin={originCoords}
+              destination={destCoords}
+              waypoints={trackingEvents.map((evt) => ({
+                lat: evt.latitude,
+                lng: evt.longitude,
+              }))}
               animationProgress={animationProgress}
             />
 

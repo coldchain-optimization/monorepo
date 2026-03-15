@@ -1,11 +1,11 @@
 package handlers
 
 import (
-"net/http"
+	"net/http"
 
-"github.com/gin-gonic/gin"
-"looplink.com/backend/internal/services"
-"looplink.com/backend/internal/utils"
+	"github.com/gin-gonic/gin"
+	"looplink.com/backend/internal/services"
+	"looplink.com/backend/internal/utils"
 )
 
 type AuthHandler struct {
@@ -46,10 +46,10 @@ func (ah *AuthHandler) SignUp(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
-"message": "User registered successfully",
-"user":    user,
-"token":   token,
-})
+		"message": "User registered successfully",
+		"user":    user,
+		"token":   token,
+	})
 }
 
 // Login handles user login
@@ -71,9 +71,9 @@ func (ah *AuthHandler) Login(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-"token": token,
-"user":  user,
-})
+		"token": token,
+		"user":  user,
+	})
 }
 
 // RefreshToken handles token refresh
@@ -104,13 +104,13 @@ func (ah *AuthHandler) RefreshToken(c *gin.Context) {
 
 // GetProfile returns the authenticated user's profile
 func (ah *AuthHandler) GetProfile(c *gin.Context) {
-userID := c.GetString("user_id")
+	userID := c.GetString("user_id")
 
-user, err := ah.authService.GetUserByID(userID)
-if err != nil {
-c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
-return
-}
+	user, err := ah.authService.GetUserByID(userID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		return
+	}
 
-c.JSON(http.StatusOK, gin.H{"user": user})
+	c.JSON(http.StatusOK, gin.H{"user": user})
 }

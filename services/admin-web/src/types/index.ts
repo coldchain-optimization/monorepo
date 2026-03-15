@@ -77,6 +77,11 @@ export interface MatchResult {
   vehicle_id: string;
   driver_id: string;
   match_score: number;
+  rule_score?: number;
+  ml_score?: number;
+  score_source?: 'rules' | 'hybrid' | string;
+  confidence?: number; // 0-1: model confidence in ML prediction
+  explanation?: string; // Domain-specific reason for score
   estimated_cost: number;
   estimated_time: number;
   carbon_footprint: number;

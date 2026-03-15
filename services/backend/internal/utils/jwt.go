@@ -1,10 +1,10 @@
 package utils
 
 import (
-"fmt"
-"time"
+	"fmt"
+	"time"
 
-"github.com/golang-jwt/jwt/v5"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 type JWTUtil struct {
@@ -48,8 +48,8 @@ func (ju *JWTUtil) VerifyToken(tokenString string) (string, string, string, erro
 	claims := &JWTClaims{}
 
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
-return []byte(ju.secretKey), nil
-})
+		return []byte(ju.secretKey), nil
+	})
 
 	if err != nil {
 		return "", "", "", fmt.Errorf("failed to parse token: %w", err)

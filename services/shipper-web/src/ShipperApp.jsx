@@ -2,6 +2,194 @@ import { useState } from 'react';
 import { api } from './api/client';
 import TrackingPage from './pages/TrackingPage.jsx';
 
+const INDIA_CITIES = [
+  'Ahmedabad',
+  'Bengaluru',
+  'Bhopal',
+  'Chandigarh',
+  'Chennai',
+  'Coimbatore',
+  'Delhi',
+  'Guwahati',
+  'Hyderabad',
+  'Indore',
+  'Jaipur',
+  'Kanyakumari',
+  'Kochi',
+  'Kolkata',
+  'Lucknow',
+  'Madurai',
+  'Mumbai',
+  'Nagpur',
+  'Patna',
+  'Pune',
+  'Raipur',
+  'Surat',
+  'Thiruvananthapuram',
+  'Trivandrum',
+  'Vijayawada',
+  'Visakhapatnam',
+];
+
+function normalizeCityInput(value) {
+  return String(value || '').trim().replace(/\s+/g, ' ').toLowerCase();
+}
+
+// Searchable dropdown component for cities - allows both presets and custom cities
+function SearchableSelect({ label, value, onChange, options, placeholder = 'Search or select...' }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredOptions = options.filter((city) =>
+    city.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Check if search term matches any existing option
+  const hasExactMatch = options.some((city) =>
+    city.toLowerCase() === searchTerm.toLowerCase()
+  );
+
+  // Allow custom city input if user types something not in the list
+  const allowCustom = searchTerm.trim().length > 0 && !hasExactMatch;
+
+  const handleSelect = (city) => {
+    onChange(city);
+    setSearchTerm('');
+    setIsOpen(false);
+  };
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <label style={{ display: 'block', marginBottom: 4, fontWeight: 'bold' }}>
+        {label}
+        <span style={{ fontSize: 12, color: '#64748b', fontWeight: 'normal', marginLeft: 4 }}>
+          (type to search or enter any city)
+        </span>
+      </label>
+      <input
+        type="text"
+        placeholder={placeholder}
+        value={searchTerm || (isOpen ? '' : value)}
+        onChange={(e) => {
+          setSearchTerm(e.target.value);
+          setIsOpen(true);
+        }}
+        onFocus={() => setIsOpen(true)}
+        onKeyDown={(e) => {
+          // Allow Enter to confirm custom city
+          if (e.key === 'Enter' && searchTerm.trim().length > 0) {
+            handleSelect(searchTerm.trim());
+            e.preventDefault();
+          }
+        }}
+        style={{
+          width: '100%',
+          padding: 10,
+          border: '1px solid #ccc',
+          borderRadius: 6,
+          boxSizing: 'border-box',
+          fontSize: 14,
+          backgroundColor: '#fff',
+        }}
+      />
+      {isOpen && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '100%',
+            left: 0,
+            right: 0,
+            backgroundColor: '#fff',
+            border: '1px solid #ccc',
+            borderTop: 'none',
+            borderRadius: '0 0 6px 6px',
+            maxHeight: 250,
+            overflowY: 'auto',
+            zIndex: 1000,
+            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+          }}
+        >
+          {filteredOptions.length > 0 || allowCustom ? (
+            <>
+              {/* Show matching preset cities */}
+              {filteredOptions.map((city) => (
+                <div
+                  key={city}
+                  onClick={() => handleSelect(city)}
+                  style={{
+                    padding: '10px 12px',
+                    cursor: 'pointer',
+                    backgroundColor: value === city ? '#e0f2fe' : '#fff',
+                    borderBottom: '1px solid #e2e8f0',
+                    fontSize: 14,
+                  }}
+                  onMouseEnter={(e) => {
+                    if (value !== city) {
+                      e.target.style.backgroundColor = '#f1f5f9';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (value !== city) {
+                      e.target.style.backgroundColor = '#fff';
+                    }
+                  }}
+                >
+                  {city}
+                </div>
+              ))}
+              
+              {/* Show custom city option if user typed something not in list */}
+              {allowCustom && (
+                <div
+                  onClick={() => handleSelect(searchTerm.trim())}
+                  style={{
+                    padding: '10px 12px',
+                    cursor: 'pointer',
+                    backgroundColor: '#f0fdf4',
+                    borderTop: filteredOptions.length > 0 ? '1px solid #e2e8f0' : 'none',
+                    borderBottom: '1px solid #e2e8f0',
+                    fontSize: 14,
+                    color: '#22c55e',
+                    fontWeight: 500,
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.backgroundColor = '#dcfce7';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.backgroundColor = '#f0fdf4';
+                  }}
+                >
+                  ✓ Use custom city: "{searchTerm.trim()}"
+                </div>
+              )}
+            </>
+          ) : (
+            <div style={{ padding: '10px 12px', color: '#999', fontSize: 14 }}>
+              No matching cities. Press Enter to use "{searchTerm.trim()}"
+            </div>
+          )}
+        </div>
+      )}
+      {isOpen && (
+        <div
+          onClick={() => {
+            setIsOpen(false);
+            setSearchTerm('');
+          }}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 999,
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
 export default function ShipperApp() {
   const [tab, setTab] = useState('create');
   const [token, setToken] = useState(localStorage.getItem('token'));
@@ -50,6 +238,7 @@ export default function ShipperApp() {
     setLoading(true);
     setError('');
     try {
+      // Values are already valid since they're selected from dropdowns
       const payload = {
         source_location: source,
         destination_location: destination,
@@ -211,25 +400,22 @@ export default function ShipperApp() {
             border: '1px solid #e2e8f0',
           }}>
             <h2>Create Shipment Request</h2>
+            {error && <div style={{ padding: 12, backgroundColor: '#fee2e2', color: '#991b1b', borderRadius: 6, marginBottom: 16 }}>{error}</div>}
             <div style={{ display: 'grid', gap: 12 }}>
-              <div>
-                <label style={{ display: 'block', marginBottom: 4, fontWeight: 'bold' }}>From</label>
-                <input
-                  value={source}
-                  onChange={(e) => setSource(e.target.value)}
-                  style={{ width: '100%', padding: 10, border: '1px solid #ccc', borderRadius: 6, boxSizing: 'border-box' }}
-                  placeholder="Source location"
-                />
-              </div>
-              <div>
-                <label style={{ display: 'block', marginBottom: 4, fontWeight: 'bold' }}>To</label>
-                <input
-                  value={destination}
-                  onChange={(e) => setDestination(e.target.value)}
-                  style={{ width: '100%', padding: 10, border: '1px solid #ccc', borderRadius: 6, boxSizing: 'border-box' }}
-                  placeholder="Destination"
-                />
-              </div>
+              <SearchableSelect
+                label="From"
+                value={source}
+                onChange={setSource}
+                options={INDIA_CITIES}
+                placeholder="Search for source city..."
+              />
+              <SearchableSelect
+                label="To"
+                value={destination}
+                onChange={setDestination}
+                options={INDIA_CITIES}
+                placeholder="Search for destination city..."
+              />
               <div>
                 <label style={{ display: 'block', marginBottom: 4, fontWeight: 'bold' }}>Load Type</label>
                 <select

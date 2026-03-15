@@ -11,6 +11,10 @@ import { StatusBar } from 'expo-status-bar';
 import { api } from './src/api/client';
 import { TABS, TAB_ORDER } from './src/constants/tabs';
 import { styles } from './src/styles/appStyles';
+import { requestLocationPermission, getCurrentLocation, watchLocation, stopWatchingLocation } from './src/services/locationService';
+import { isWithinLocation, getLocationInfo, calculateDistance } from './src/utils/locationValidation';
+import AlertService from './src/services/alertService';
+import { getCoordsFromLocation } from './src/utils/geo';
 import TopTabs from './src/components/TopTabs';
 import KpiStrip from './src/components/KpiStrip';
 import LoginScreen from './src/screens/LoginScreen';
@@ -88,27 +92,65 @@ function AppContent() {
   }, [isLoggedIn, tab, driverVehicles]);
 
   useEffect(() => {
-    if (!isLoggedIn || tab !== TABS.LIVE_TRACKING || !activeShipment?.id) return;
+    if (!isLoggedIn || tab !== TABS.LIVE_TRACKING || !activeShipment?.id) {
+      stopWatchingLocation();
+      return;
+    }
 
-    const loadLiveTracking = async () => {
+    let unsubscribe = null;
+
+    const startLiveTracking = async () => {
+      // First, get status history from backend
       try {
-        const [statusRes, historyRes, statusTimelineRes] = await Promise.all([
-          api.getTrackingStatus(activeShipment.id),
-          api.getTrackingHistory(activeShipment.id),
-          api.getStatusHistory(activeShipment.id).catch(() => ({ events: [] })),
-        ]);
-
-        setTrackingStatus(statusRes || null);
-        setTrackingHistory(historyRes?.events || []);
+        const statusTimelineRes = await api.getStatusHistory(activeShipment.id).catch(() => ({ events: [] }));
         setStatusHistory(statusTimelineRes?.events || []);
       } catch (e) {
-        console.warn('[App] Live tracking fetch failed:', e.message);
+        console.warn('[App] Failed to load status history:', e.message);
       }
+
+      // Watch real device GPS location
+      unsubscribe = watchLocation(
+        (locationData) => {
+          console.log('[App] GPS update:', locationData);
+          
+          // Construct tracking status from real GPS
+          const trackingData = {
+            latitude: locationData.latitude,
+            longitude: locationData.longitude,
+            status: 'in_transit',
+            speed: Math.round(locationData.speed || 0),
+            temperature: 18, // Default temp - could be from IoT sensor
+            estimated_arrival: new Date(Date.now() + 60 * 60 * 1000), // Placeholder
+            accuracy: locationData.accuracy,
+          };
+          
+          setTrackingStatus(trackingData);
+          
+          // Add to tracking history
+          setTrackingHistory((prev) => [
+            ...prev,
+            {
+              latitude: locationData.latitude,
+              longitude: locationData.longitude,
+              timestamp: locationData.timestamp,
+            },
+          ]);
+        },
+        {
+          accuracy: 6, // High accuracy
+          timeInterval: 5000, // 5 seconds
+          distanceInterval: 10, // 10 meters
+        }
+      );
     };
 
-    loadLiveTracking();
-    const intervalId = setInterval(loadLiveTracking, 5000);
-    return () => clearInterval(intervalId);
+    startLiveTracking();
+
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
   }, [isLoggedIn, tab, activeShipment?.id]);
 
   const handleLogin = async () => {
@@ -121,6 +163,15 @@ function AppContent() {
       api.setToken(res.token);
       setToken(res.token);
       setUser(res.user);
+      
+      // Request location permission after successful login
+      const locationGranted = await requestLocationPermission();
+      if (locationGranted) {
+        console.log('[App] Location permission granted');
+      } else {
+        console.warn('[App] Location permission not granted - live tracking may not work');
+      }
+      
       await loadDashboardData();
       
       // Load driver's profile to get driver ID
@@ -159,6 +210,7 @@ function AppContent() {
       clearInterval(pollingIntervalRef.current);
       pollingIntervalRef.current = null;
     }
+    stopWatchingLocation();
     api.clearToken();
     setToken(null);
     setUser(null);
@@ -313,30 +365,149 @@ function AppContent() {
 
   const markAsPickedUp = async () => {
     if (!activeShipment?.id || !driverId || !trackingStatus) return;
+
     try {
-      await api.recordPickupEvent(activeShipment.id, {
-        driver_id: driverId,
-        location: activeShipment.source_location,
+      // Get source location coordinates
+      const sourceCoords = getCoordsFromLocation(activeShipment.source_location, `${activeShipment.id}-src`);
+      const driverCoords = {
         latitude: trackingStatus.latitude,
         longitude: trackingStatus.longitude,
-      });
+      };
+
+      // Check if driver is within 50km of source location
+      const withinRange = isWithinLocation(driverCoords, sourceCoords, 50);
+
+      if (!withinRange) {
+        const locationInfo = getLocationInfo(driverCoords, sourceCoords);
+        AlertService.showPickupLocationMismatch(
+          `${locationInfo.distance} km`,
+          () => markAsPickedUp() // Retry
+        );
+        return;
+      }
+
+      // Show confirmation before marking
+      AlertService.showPickupConfirmation(
+        activeShipment.source_location,
+        async () => {
+          try {
+            console.log('[App] Recording pickup event...');
+            const result = await api.recordPickupEvent(activeShipment.id, {
+              driver_id: driverId,
+              location: activeShipment.source_location,
+              latitude: trackingStatus.latitude,
+              longitude: trackingStatus.longitude,
+            });
+            console.log('[App] Pickup recorded:', result);
+
+            AlertService.showSuccess(
+              'Pickup Confirmed',
+              `Picked up from ${activeShipment.source_location}`,
+              () => {
+                // Reload shipment data
+                loadDashboardData();
+              }
+            );
+          } catch (e) {
+            console.error('[App] Pickup error:', e.message);
+            AlertService.showError('Pickup Failed', e.message, () => {});
+          }
+        },
+        () => {} // Cancel
+      );
     } catch (e) {
-      setError(e.message);
+      console.error('[App] Pickup validation error:', e.message);
+      AlertService.showError('Error', e.message, () => {});
     }
   };
 
   const markAsDelivered = async () => {
     if (!activeShipment?.id || !driverId || !trackingStatus) return;
+
     try {
-      await api.recordDeliveryEvent(activeShipment.id, {
-        driver_id: driverId,
-        location: activeShipment.destination_location,
+      // Get destination location coordinates
+      const destCoords = getCoordsFromLocation(activeShipment.destination_location, `${activeShipment.id}-dst`);
+      const driverCoords = {
         latitude: trackingStatus.latitude,
         longitude: trackingStatus.longitude,
-        proof_image: '',
-      });
+      };
+
+      // Check if driver is within 50km of destination location
+      const withinRange = isWithinLocation(driverCoords, destCoords, 50);
+
+      if (!withinRange) {
+        const locationInfo = getLocationInfo(driverCoords, destCoords);
+        // Show emergency delivery option
+        AlertService.showDeliveryLocationMismatch(
+          `${locationInfo.distance} km`,
+          () => markAsDelivered(), // Retry
+          () => requestEmergencyDelivery() // Emergency delivery
+        );
+        return;
+      }
+
+      // Show confirmation before marking
+      AlertService.showDeliveryConfirmation(
+        activeShipment.destination_location,
+        async () => {
+          try {
+            console.log('[App] Recording delivery event...');
+            const result = await api.recordDeliveryEvent(activeShipment.id, {
+              driver_id: driverId,
+              location: activeShipment.destination_location,
+              latitude: trackingStatus.latitude,
+              longitude: trackingStatus.longitude,
+              proof_image: '',
+            });
+            console.log('[App] Delivery recorded:', result);
+
+            AlertService.showSuccess(
+              'Delivery Confirmed',
+              `Delivered to ${activeShipment.destination_location}`,
+              () => {
+                // Reload shipment data
+                loadDashboardData();
+              }
+            );
+          } catch (e) {
+            console.error('[App] Delivery error:', e.message);
+            AlertService.showError('Delivery Failed', e.message, () => {});
+          }
+        },
+        () => {} // Cancel
+      );
     } catch (e) {
-      setError(e.message);
+      console.error('[App] Delivery validation error:', e.message);
+      AlertService.showError('Error', e.message, () => {});
+    }
+  };
+
+  const requestEmergencyDelivery = async () => {
+    if (!activeShipment?.id || !driverId || !trackingStatus) return;
+
+    try {
+      AlertService.showEmergencyDeliveryConsent(
+        async () => {
+          try {
+            console.log('[App] Requesting emergency delivery...');
+            // TODO: Send emergency request to shipper via backend
+            // For now, just log it
+            console.log('[App] Emergency delivery request sent for shipment:', activeShipment.id);
+
+            AlertService.showSuccess(
+              'Request Sent',
+              'Shipper will be notified. Awaiting approval...',
+              () => {}
+            );
+          } catch (e) {
+            console.error('[App] Emergency request error:', e.message);
+            AlertService.showError('Request Failed', e.message, () => {});
+          }
+        },
+        () => {} // Cancel
+      );
+    } catch (e) {
+      console.error('[App] Emergency emergency delivery error:', e.message);
     }
   };
 

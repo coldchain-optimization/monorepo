@@ -2,6 +2,11 @@ import React from 'react';
 import { Text, View } from 'react-native';
 import { styles } from '../styles/appStyles';
 
+const pct = (value) => {
+  const n = Number(value || 0);
+  return n <= 1 ? n * 100 : n;
+};
+
 export default function BackhaulingScreen({ backhaulOptions }) {
   return (
     <>
@@ -11,8 +16,11 @@ export default function BackhaulingScreen({ backhaulOptions }) {
         <View key={`${b.vehicle_id}-${idx}`} style={styles.card}>
           <Text style={styles.cardTitle}>Vehicle {b.vehicle_id?.slice(0, 8)}...</Text>
           <Text style={styles.cardMeta}>
-            Score: {Number(b.match_score || 0).toFixed(1)} | Bonus: Rs {b.backhauling_bonus || 0}
+            Final: {pct(b.match_score).toFixed(1)}% | Rule: {pct(b.rule_score ?? b.match_score).toFixed(1)}%
+            {b.ml_score != null ? ` | ML: ${pct(b.ml_score).toFixed(1)}%${b.confidence != null ? ` (±${(b.confidence * 100).toFixed(0)}%)` : ''}` : ''}
           </Text>
+          <Text style={styles.helper}>Source: {b.score_source || 'rules'} | Bonus: Rs {b.backhauling_bonus || 0}</Text>
+          {b.explanation && <Text style={styles.helper}>💡 {b.explanation}</Text>}
         </View>
       ))}
     </>

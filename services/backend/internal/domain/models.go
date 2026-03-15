@@ -132,7 +132,12 @@ type MatchingRequest struct {
 type MatchResult struct {
 	VehicleID        string        `json:"vehicle_id"`
 	DriverID         string        `json:"driver_id"`
-	MatchScore       float64       `json:"match_score"` // 0-1 scale
+	MatchScore       float64       `json:"match_score"` // final score after blending (0-100)
+	RuleScore        float64       `json:"rule_score"`
+	MLScore          *float64      `json:"ml_score,omitempty"`
+	ScoreSource      string        `json:"score_source"`
+	Confidence       *float64      `json:"confidence,omitempty"` // 0-1: model confidence in ML prediction
+	Explanation      string        `json:"explanation,omitempty"`
 	EstimatedCost    float64       `json:"estimated_cost"`
 	PricingBreakdown *PricingBreak `json:"pricing_breakdown"`
 	EstimatedTime    int           `json:"estimated_time"` // in minutes

@@ -1,6 +1,11 @@
 import { useState, useEffect } from 'react'
 import { api } from '../api/client'
 
+const pct = (value) => {
+  const n = Number(value || 0)
+  return n <= 1 ? n * 100 : n
+}
+
 export default function Matching() {
   const [shipments, setShipments] = useState([])
   const [loading, setLoading] = useState(true)
@@ -110,9 +115,19 @@ export default function Matching() {
                   <div className="flex justify-between items-start">
                     <div>
                       <div className="flex items-center gap-3 mb-2">
-                        <span className="text-lg font-bold text-indigo-600">{m.match_score?.toFixed(1)}%</span>
-                        <span className="text-sm text-gray-500">Match Score</span>
+                        <span className="text-lg font-bold text-indigo-600">{pct(m.match_score).toFixed(1)}%</span>
+                        <span className="text-sm text-gray-500">Final Match</span>
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${m.score_source === 'hybrid' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'}`}>
+                          {m.score_source || 'rules'}
+                        </span>
                       </div>
+                      <p className="text-xs text-gray-500 mb-1">
+                        Rule: {pct(m.rule_score ?? m.match_score).toFixed(1)}%
+                        {m.ml_score != null ? ` · ML: ${pct(m.ml_score).toFixed(1)}%${m.confidence != null ? ` (±${(m.confidence * 100).toFixed(0)}% conf)` : ''}` : ''}
+                      </p>
+                      {m.explanation && (
+                        <p className="text-xs text-blue-600 italic mt-1">💡 {m.explanation}</p>
+                      )}
                       <p className="text-sm text-gray-600">
                         Vehicle: {m.vehicle_id?.slice(0, 8)}... · Driver: {m.driver_id?.slice(0, 8)}...
                       </p>

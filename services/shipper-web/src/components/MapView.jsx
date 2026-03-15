@@ -19,14 +19,31 @@ export default function MapView({
   useEffect(() => {
     if (!mapContainer.current || map.current) return;
 
-    // Create map centered on origin
-    map.current = L.map(mapContainer.current).setView([origin.lat, origin.lng], 6);
+    // Create map centered on origin with higher default zoom for better detail
+    map.current = L.map(mapContainer.current, {
+      zoomControl: true,
+      preferCanvas: true, // Better performance for mobile
+    }).setView([origin.lat, origin.lng], 10);
 
-    // Add tile layer
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    // Add high-quality tile layer (CartoDB Positron - better for urban areas and Indian cities)
+    // Free tier, no API key needed, excellent accuracy for city-level mapping
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+      attribution: '© CartoDB contributors | © OpenStreetMap contributors',
+      maxZoom: 20,
+      minZoom: 2,
+      crossOrigin: true,
+    }).addTo(map.current);
+
+    // Alternative tile layers users can switch to (optional layer control)
+    const osmStandard = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors',
       maxZoom: 19,
-    }).addTo(map.current);
+    });
+    
+    const osmTopoMap = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenTopoMap contributors',
+      maxZoom: 17,
+    });
 
     // Add origin marker (pickup)
     L.marker([origin.lat, origin.lng], {

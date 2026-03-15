@@ -2,6 +2,11 @@ import React from 'react';
 import { Text, Pressable, View } from 'react-native';
 import { styles } from '../styles/appStyles';
 
+const pct = (value) => {
+  const n = Number(value || 0);
+  return n <= 1 ? n * 100 : n;
+};
+
 export default function MatchingScreen({ matches, onAcceptMatch }) {
   return (
     <>
@@ -11,8 +16,11 @@ export default function MatchingScreen({ matches, onAcceptMatch }) {
         <View key={`${m.vehicle_id}-${idx}`} style={styles.card}>
           <Text style={styles.cardTitle}>Vehicle {m.vehicle_id?.slice(0, 8)}...</Text>
           <Text style={styles.cardMeta}>
-            Score: {Number(m.match_score || 0).toFixed(1)} | Rs {m.estimated_cost || 0}
+            Final: {pct(m.match_score).toFixed(1)}% | Rule: {pct(m.rule_score ?? m.match_score).toFixed(1)}%
+            {m.ml_score != null ? ` | ML: ${pct(m.ml_score).toFixed(1)}%${m.confidence != null ? ` (±${(m.confidence * 100).toFixed(0)}%)` : ''}` : ''}
           </Text>
+          <Text style={styles.helper}>Source: {m.score_source || 'rules'} | Rs {m.estimated_cost || 0}</Text>
+          {m.explanation && <Text style={styles.helper}>💡 {m.explanation}</Text>}
           <Pressable style={styles.smallBtn} onPress={() => onAcceptMatch(m)}>
             <Text style={styles.btnText}>Accept</Text>
           </Pressable>

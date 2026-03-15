@@ -16,6 +16,9 @@ export const KNOWN_CITY_COORDS = {
   lucknow: { latitude: 26.8467, longitude: 80.9462 },
   patna: { latitude: 25.5941, longitude: 85.1376 },
   surat: { latitude: 21.1702, longitude: 72.8311 },
+  kanyakumari: { latitude: 8.0883, longitude: 77.5385 },
+  trivandrum: { latitude: 8.5241, longitude: 76.9366 },
+  thiruvananthapuram: { latitude: 8.5241, longitude: 76.9366 },
 };
 
 export function getCoordsFromLocation(location, fallbackSeed = 'default') {

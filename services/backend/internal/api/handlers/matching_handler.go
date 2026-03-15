@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"sort"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -15,12 +16,31 @@ import (
 type MatchingHandler struct {
 	matchingEngine *services.MatchingEngine
 	shipmentRepo   *repository.ShipmentRepository
+	vehicleRepo    *repository.VehicleRepository
 	kbService      *services.KnowledgeBaseService
 	pricingService *services.PricingService
+	routeService   *services.RouteService
+	mlService      *services.MLInferenceService
 }
 
-func NewMatchingHandler(matchingEngine *services.MatchingEngine, shipmentRepo *repository.ShipmentRepository, kbService *services.KnowledgeBaseService, pricingService *services.PricingService) *MatchingHandler {
-	return &MatchingHandler{matchingEngine: matchingEngine, shipmentRepo: shipmentRepo, kbService: kbService, pricingService: pricingService}
+func NewMatchingHandler(
+	matchingEngine *services.MatchingEngine,
+	shipmentRepo *repository.ShipmentRepository,
+	vehicleRepo *repository.VehicleRepository,
+	kbService *services.KnowledgeBaseService,
+	pricingService *services.PricingService,
+	routeService *services.RouteService,
+	mlService *services.MLInferenceService,
+) *MatchingHandler {
+	return &MatchingHandler{
+		matchingEngine: matchingEngine,
+		shipmentRepo:   shipmentRepo,
+		vehicleRepo:    vehicleRepo,
+		kbService:      kbService,
+		pricingService: pricingService,
+		routeService:   routeService,
+		mlService:      mlService,
+	}
 }
 
 type SearchMatchesRequest struct {
@@ -48,17 +68,61 @@ func (mh *MatchingHandler) SearchMatches(c *gin.Context) {
 		return
 	}
 
-	// Enrich matches with pricing and detailed score breakdown
+	vehicleCache := make(map[string]*domain.Vehicle)
+	routeData, routeErr := mh.resolveRouteData(shipment)
+	if routeErr != nil {
+		log.Printf("[SearchMatches] route calculation fallback for shipment=%s: %v", shipment.ID, routeErr)
+	}
+	distance := 300.0
+	if routeData != nil && routeData.Distance > 0 {
+		distance = routeData.Distance
+	}
+
+	// Enrich matches with pricing, score breakdown, and optional ML blending.
 	for _, match := range matches {
-		// For simplicity, assume 300km as standard route distance (this could be enhanced with RouteService)
-		distance := 300.0
+		ruleScore := match.MatchScore
+		match.RuleScore = ruleScore
+		match.ScoreSource = "rules"
+
+		vehicle := &domain.Vehicle{}
+		if cached, ok := vehicleCache[match.VehicleID]; ok {
+			vehicle = cached
+		} else if mh.vehicleRepo != nil {
+			if loaded, err := mh.vehicleRepo.GetVehicleByID(match.VehicleID); err == nil {
+				vehicle = loaded
+				vehicleCache[match.VehicleID] = loaded
+			}
+		}
+		if vehicle.Capacity <= 0 {
+			vehicle.Capacity = maxInt(1, shipment.LoadVolume)
+		}
+		if vehicle.MaxWeight <= 0 {
+			vehicle.MaxWeight = maxInt(1, shipment.LoadWeight)
+		}
 
 		// Calculate pricing breakdown
-		match.PricingBreakdown = mh.pricingService.CalculatePricing(shipment, &domain.Vehicle{}, distance)
+		match.PricingBreakdown = mh.pricingService.CalculatePricing(shipment, vehicle, distance)
 
 		// Calculate detailed score components
-		match.ScoreDetails = mh.pricingService.CalculateDetailedScore(shipment, &domain.Vehicle{}, distance, match.EstimatedTime)
+		match.ScoreDetails = mh.pricingService.CalculateDetailedScore(shipment, vehicle, distance, match.EstimatedTime)
+
+		if mh.mlService != nil && mh.mlService.Enabled() {
+			mlResult, err := mh.mlService.PredictMatchScoreWithDetails(c.Request.Context(), shipment, vehicle, routeData, ruleScore)
+			if err != nil {
+				log.Printf("[SearchMatches] ML inference failed for vehicle=%s: %v", match.VehicleID, err)
+			} else {
+				match.MLScore = &mlResult.Score
+				match.Confidence = &mlResult.Confidence
+				match.Explanation = mlResult.Explanation
+				match.MatchScore = mh.mlService.Blend(ruleScore, mlResult.Score)
+				match.ScoreSource = "hybrid"
+			}
+		}
 	}
+
+	sort.Slice(matches, func(i, j int) bool {
+		return matches[i].MatchScore > matches[j].MatchScore
+	})
 
 	c.JSON(http.StatusOK, gin.H{"shipment_id": req.ShipmentID, "matches": matches, "count": len(matches)})
 }
@@ -136,13 +200,75 @@ func (mh *MatchingHandler) GetBackhauling(c *gin.Context) {
 		return
 	}
 	type BackhaulResult struct {
-		VehicleID  string  `json:"vehicle_id"`
-		MatchScore float64 `json:"match_score"`
-		Bonus      float64 `json:"backhauling_bonus"`
+		VehicleID   string   `json:"vehicle_id"`
+		MatchScore  float64  `json:"match_score"`
+		RuleScore   float64  `json:"rule_score"`
+		MLScore     *float64 `json:"ml_score,omitempty"`
+		Confidence  *float64 `json:"confidence,omitempty"`
+		Explanation string   `json:"explanation,omitempty"`
+		ScoreSource string   `json:"score_source"`
+		Bonus       float64  `json:"backhauling_bonus"`
 	}
 	var results []BackhaulResult
-	for _, match := range matches {
-		results = append(results, BackhaulResult{VehicleID: match.VehicleID, MatchScore: match.MatchScore, Bonus: 50.0})
+	routeData, routeErr := mh.resolveRouteData(shipment)
+	if routeErr != nil {
+		log.Printf("[GetBackhauling] route calculation fallback for shipment=%s: %v", shipment.ID, routeErr)
 	}
+	for _, match := range matches {
+		ruleScore := match.MatchScore
+		finalScore := ruleScore
+		scoreSource := "rules"
+		var mlScore *float64
+		var confidence *float64
+		var explanation string
+
+		if mh.mlService != nil && mh.mlService.Enabled() && mh.vehicleRepo != nil {
+			vehicle, vErr := mh.vehicleRepo.GetVehicleByID(match.VehicleID)
+			if vErr == nil {
+				mlResult, mlErr := mh.mlService.PredictMatchScoreWithDetails(c.Request.Context(), shipment, vehicle, routeData, ruleScore)
+				if mlErr != nil {
+					log.Printf("[GetBackhauling] ML inference failed for vehicle=%s: %v", match.VehicleID, mlErr)
+				} else {
+					mlScore = &mlResult.Score
+					confidence = &mlResult.Confidence
+					explanation = mlResult.Explanation
+					finalScore = mh.mlService.Blend(ruleScore, mlResult.Score)
+					scoreSource = "hybrid"
+				}
+			}
+		}
+
+		results = append(results, BackhaulResult{
+			VehicleID:   match.VehicleID,
+			MatchScore:  finalScore,
+			RuleScore:   ruleScore,
+			MLScore:     mlScore,
+			Confidence:  confidence,
+			Explanation: explanation,
+			ScoreSource: scoreSource,
+			Bonus:       50.0,
+		})
+	}
+	sort.Slice(results, func(i, j int) bool {
+		return results[i].MatchScore > results[j].MatchScore
+	})
 	c.JSON(http.StatusOK, gin.H{"shipment_id": shipmentID, "backhauling_options": results, "count": len(results)})
+}
+
+func maxInt(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}
+
+func (mh *MatchingHandler) resolveRouteData(shipment *domain.Shipment) (*domain.RouteData, error) {
+	if mh.routeService == nil || shipment == nil {
+		return nil, fmt.Errorf("route service unavailable")
+	}
+	routeData, err := mh.routeService.CalculateRoute(shipment.SourceLocation, shipment.DestLocation)
+	if err != nil {
+		return nil, err
+	}
+	return routeData, nil
 }

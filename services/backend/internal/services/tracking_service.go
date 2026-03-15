@@ -11,14 +11,16 @@ import (
 )
 
 type TrackingService struct {
-	shipmentRepo *repository.ShipmentRepository
-	vehicleRepo  *repository.VehicleRepository
+	shipmentRepo     *repository.ShipmentRepository
+	vehicleRepo      *repository.VehicleRepository
+	geocodingService *GeocodingService
 }
 
-func NewTrackingService(shipmentRepo *repository.ShipmentRepository, vehicleRepo *repository.VehicleRepository) *TrackingService {
+func NewTrackingService(shipmentRepo *repository.ShipmentRepository, vehicleRepo *repository.VehicleRepository, geocodingService *GeocodingService) *TrackingService {
 	return &TrackingService{
-		shipmentRepo: shipmentRepo,
-		vehicleRepo:  vehicleRepo,
+		shipmentRepo:     shipmentRepo,
+		vehicleRepo:      vehicleRepo,
+		geocodingService: geocodingService,
 	}
 }
 
@@ -156,34 +158,34 @@ func (ts *TrackingService) EstimateArrivalTime(distanceRemaining, speed float64)
 }
 
 func (ts *TrackingService) locationToCoordinates(location, seed string) (float64, float64) {
-	known := map[string][2]float64{
-		"mumbai":    {19.0760, 72.8777},
-		"delhi":     {28.7041, 77.1025},
-		"bengaluru": {12.9716, 77.5946},
-		"bangalore": {12.9716, 77.5946},
-		"kochi":     {9.9312, 76.2673},
-		"cochin":    {9.9312, 76.2673},
-		"hyderabad": {17.3850, 78.4867},
-		"chennai":   {13.0827, 80.2707},
-		"kolkata":   {22.5726, 88.3639},
-		"pune":      {18.5204, 73.8567},
-		"ahmedabad": {23.0225, 72.5714},
-		"jaipur":    {26.9124, 75.7873},
-		"indore":    {22.7196, 75.8577},
-		"bhopal":    {23.2599, 77.4126},
-		"lucknow":   {26.8467, 80.9462},
-		"patna":     {25.5941, 85.1376},
-		"surat":     {21.1702, 72.8311},
-	}
-
 	normalized := strings.ToLower(strings.TrimSpace(location))
-	for city, coords := range known {
-		if strings.Contains(normalized, city) {
-			return coords[0], coords[1]
+
+	// Tier 1: Use geocoding service (which tries APIs first, then curated DB)
+	// This resolves ANY Indian city without manual database updates
+	if ts.geocodingService != nil {
+		lat, lon, err := ts.geocodingService.ResolveCity(normalized)
+		if err == nil {
+			return lat, lon
 		}
 	}
 
-	// Deterministic fallback inside India-like bounds for unknown locations
+	// Tier 2: Fallback - direct curated cities lookup if geocoding service unavailable
+	// Only used if GeocodingService is nil (should not happen in production)
+	for _, city := range domain.CuratedIndianCities {
+		if strings.ToLower(city.Name) == normalized {
+			return city.Latitude, city.Longitude
+		}
+		// Check aliases
+		for _, alias := range city.Aliases {
+			if strings.ToLower(alias) == normalized {
+				return city.Latitude, city.Longitude
+			}
+		}
+	}
+
+	// Tier 3: Last resort - deterministic hash (rarely reached)
+	// This should almost never happen - implies city doesn't exist
+	// Hash function ensures coordinates are at least within India's bounds
 	hash := 0
 	for _, ch := range normalized + ":" + seed {
 		hash = ((hash << 5) - hash) + int(ch)
@@ -191,8 +193,8 @@ func (ts *TrackingService) locationToCoordinates(location, seed string) (float64
 	if hash < 0 {
 		hash = -hash
 	}
-	lat := 8.0 + float64(hash%2700)/100.0      // 8.00 - 35.00
-	lon := 68.0 + float64((hash*7)%2900)/100.0 // 68.00 - 97.00
+	lat := 8.4 + float64(hash%2720)/100.0      // 8.4 to 35.6°N
+	lon := 68.7 + float64((hash*7)%2855)/100.0 // 68.7 to 97.25°E
 	return lat, lon
 }
 

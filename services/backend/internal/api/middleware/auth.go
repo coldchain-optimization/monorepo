@@ -1,12 +1,12 @@
 package middleware
 
 import (
-"fmt"
-"net/http"
-"strings"
+	"fmt"
+	"net/http"
+	"strings"
 
-"github.com/gin-gonic/gin"
-"looplink.com/backend/internal/utils"
+	"github.com/gin-gonic/gin"
+	"looplink.com/backend/internal/utils"
 )
 
 // AuthMiddleware validates JWT token in request header
@@ -82,8 +82,8 @@ func ErrorHandlerMiddleware() gin.HandlerFunc {
 		defer func() {
 			if err := recover(); err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{
-"error": fmt.Sprintf("internal server error: %v", err),
-})
+					"error": fmt.Sprintf("internal server error: %v", err),
+				})
 				c.Abort()
 			}
 		}()

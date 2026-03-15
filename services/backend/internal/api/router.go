@@ -51,12 +51,20 @@ func SetupRouter(db *sql.DB, cfg *config.Config) *gin.Engine {
 	shipperRepo := repository.NewShipperRepository(db)
 	consignmentRepo := repository.NewConsignmentRepository(db)
 	kbRepo := repository.NewKnowledgeBaseRepository(db)
+	geocodingCacheRepo := repository.NewGeocodingCacheRepository(db)
 
 	// Initialize services
 	authService := services.NewAuthService(userRepo, jwtUtil)
 	routeService := services.NewRouteService()
 	pricingService := services.NewPricingService()
-	trackingService := services.NewTrackingService(shipmentRepo, vehicleRepo)
+	mlInferenceService := services.NewMLInferenceService(
+		cfg.MLEnabled,
+		cfg.MLServiceURL,
+		time.Duration(cfg.MLTimeoutMs)*time.Millisecond,
+		cfg.MLBlendWeight,
+	)
+	geocodingService := services.NewGeocodingService(geocodingCacheRepo)
+	trackingService := services.NewTrackingService(shipmentRepo, vehicleRepo, geocodingService)
 	statusService := services.NewStatusService()
 	matchingEngine := services.NewMatchingEngine(shipmentRepo, vehicleRepo, routeService)
 	consolidationService := services.NewConsolidationService()
@@ -69,14 +77,23 @@ func SetupRouter(db *sql.DB, cfg *config.Config) *gin.Engine {
 
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(authService, jwtUtil)
-	shipmentHandler := handlers.NewShipmentHandler(shipmentService, matchingEngine, shipperService)
+	shipmentHandler := handlers.NewShipmentHandler(
+		shipmentService,
+		matchingEngine,
+		shipperService,
+		vehicleRepo,
+		pricingService,
+		routeService,
+		mlInferenceService,
+	)
 	vehicleHandler := handlers.NewVehicleHandler(vehicleRepo)
 	driverHandler := handlers.NewDriverHandler(driverService)
-	matchingHandler := handlers.NewMatchingHandler(matchingEngine, shipmentRepo, kbService, pricingService)
+	matchingHandler := handlers.NewMatchingHandler(matchingEngine, shipmentRepo, vehicleRepo, kbService, pricingService, routeService, mlInferenceService)
 	trackingHandler := handlers.NewTrackingHandler(trackingService, shipmentRepo, vehicleRepo)
-	statusHandler := handlers.NewStatusHandler(statusService)
+	statusHandler := handlers.NewStatusHandler(statusService, shipmentRepo, trackingService)
 	consolidationHandler := handlers.NewConsolidationHandler(consolidationService, costAllocationService, shipmentRepo, vehicleRepo)
 	adminHandler := handlers.NewAdminHandler(userRepo, shipmentRepo, vehicleRepo, driverRepo, kbRepo)
+	citiesHandler := handlers.NewCitiesHandler()
 
 	// Apply global middleware
 	router.Use(middleware.ErrorHandlerMiddleware())
@@ -86,6 +103,11 @@ func SetupRouter(db *sql.DB, cfg *config.Config) *gin.Engine {
 	{
 		publicGroup.POST("/auth/signup", authHandler.SignUp)
 		publicGroup.POST("/auth/login", authHandler.Login)
+
+		// Cities routes (no auth required - used by all apps for location data)
+		publicGroup.GET("/cities/all", citiesHandler.GetAllCities)
+		publicGroup.GET("/cities/resolve", citiesHandler.ResolveCity) // ?city=Mumbai
+		publicGroup.GET("/cities/search", citiesHandler.SearchCities) // ?q=nash
 	}
 
 	// Protected routes
