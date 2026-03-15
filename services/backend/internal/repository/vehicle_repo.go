@@ -86,6 +86,30 @@ func (r *VehicleRepository) GetAvailableVehicles() ([]*domain.Vehicle, error) {
 	return vehicles, rows.Err()
 }
 
+func (r *VehicleRepository) GetAllVehicles() ([]*domain.Vehicle, error) {
+	query := `
+		SELECT id, driver_id, vehicle_type, license_plate, manufacturer, model, year, capacity, max_weight, is_refrigerated, temperature, fuel_type, carbon_footprint, is_available, current_location, created_at, updated_at
+		FROM vehicles ORDER BY created_at DESC
+	`
+	rows, err := r.db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var vehicles []*domain.Vehicle
+	for rows.Next() {
+		vehicle := &domain.Vehicle{}
+		err := rows.Scan(&vehicle.ID, &vehicle.DriverID, &vehicle.VehicleType, &vehicle.LicensePlate, &vehicle.Manufacturer, &vehicle.Model, &vehicle.Year, &vehicle.Capacity, &vehicle.MaxWeight, &vehicle.IsRefrigerated, &vehicle.Temperature, &vehicle.FuelType, &vehicle.CarbonFootprint, &vehicle.IsAvailable, &vehicle.CurrentLocation, &vehicle.CreatedAt, &vehicle.UpdatedAt)
+		if err != nil {
+			return nil, err
+		}
+		vehicles = append(vehicles, vehicle)
+	}
+
+	return vehicles, rows.Err()
+}
+
 func (r *VehicleRepository) UpdateVehicle(vehicle *domain.Vehicle) error {
 	query := `
 		UPDATE vehicles 

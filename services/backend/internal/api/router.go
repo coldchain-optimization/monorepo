@@ -2,6 +2,7 @@ package api
 
 import (
 	"database/sql"
+	"strings"
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -19,7 +20,19 @@ func SetupRouter(db *sql.DB, cfg *config.Config) *gin.Engine {
 
 	// CORS configuration
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:5173", "http://localhost:5174", "http://localhost:3000"},
+		AllowOrigins: []string{
+			"http://localhost:3000",
+			"http://10.236.168.104:5173",
+			"http://10.236.168.104:5174",
+			"http://10.236.168.104:5175",
+			"http://10.236.168.104:5176",
+			"http://10.236.168.104:5177",
+			"http://10.236.168.104:5178",
+		},
+		AllowOriginFunc: func(origin string) bool {
+			// Allow local dev servers regardless of chosen Vite fallback port.
+			return strings.HasPrefix(origin, "http://localhost:") || strings.HasPrefix(origin, "http://127.0.0.1:")
+		},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
@@ -42,7 +55,12 @@ func SetupRouter(db *sql.DB, cfg *config.Config) *gin.Engine {
 	// Initialize services
 	authService := services.NewAuthService(userRepo, jwtUtil)
 	routeService := services.NewRouteService()
+	pricingService := services.NewPricingService()
+	trackingService := services.NewTrackingService(shipmentRepo, vehicleRepo)
+	statusService := services.NewStatusService()
 	matchingEngine := services.NewMatchingEngine(shipmentRepo, vehicleRepo, routeService)
+	consolidationService := services.NewConsolidationService()
+	costAllocationService := services.NewCostAllocationService()
 	shipmentService := services.NewShipmentService(shipmentRepo, vehicleRepo)
 	driverService := services.NewDriverService(driverRepo, userRepo, vehicleRepo)
 	shipperService := services.NewShipperService(shipperRepo, userRepo)
@@ -54,8 +72,11 @@ func SetupRouter(db *sql.DB, cfg *config.Config) *gin.Engine {
 	shipmentHandler := handlers.NewShipmentHandler(shipmentService, matchingEngine, shipperService)
 	vehicleHandler := handlers.NewVehicleHandler(vehicleRepo)
 	driverHandler := handlers.NewDriverHandler(driverService)
-	matchingHandler := handlers.NewMatchingHandler(matchingEngine, shipmentRepo, kbService)
-	adminHandler := handlers.NewAdminHandler(userRepo, shipmentRepo, vehicleRepo, driverRepo)
+	matchingHandler := handlers.NewMatchingHandler(matchingEngine, shipmentRepo, kbService, pricingService)
+	trackingHandler := handlers.NewTrackingHandler(trackingService, shipmentRepo, vehicleRepo)
+	statusHandler := handlers.NewStatusHandler(statusService)
+	consolidationHandler := handlers.NewConsolidationHandler(consolidationService, costAllocationService, shipmentRepo, vehicleRepo)
+	adminHandler := handlers.NewAdminHandler(userRepo, shipmentRepo, vehicleRepo, driverRepo, kbRepo)
 
 	// Apply global middleware
 	router.Use(middleware.ErrorHandlerMiddleware())
@@ -81,6 +102,7 @@ func SetupRouter(db *sql.DB, cfg *config.Config) *gin.Engine {
 
 		// Shipment routes
 		protectedGroup.POST("/shipments", shipmentHandler.CreateShipment)
+		protectedGroup.GET("/shipments/available", shipmentHandler.GetAvailableShipments)
 		protectedGroup.GET("/shipments", shipmentHandler.ListShipments)
 		protectedGroup.GET("/shipments/:id", shipmentHandler.GetShipment)
 		protectedGroup.PUT("/shipments/:id", shipmentHandler.UpdateShipment)
@@ -108,6 +130,23 @@ func SetupRouter(db *sql.DB, cfg *config.Config) *gin.Engine {
 		protectedGroup.POST("/matching/accept", matchingHandler.AcceptMatch)
 		protectedGroup.POST("/matching/feedback", matchingHandler.SubmitFeedback)
 		protectedGroup.GET("/matching/backhauling/:shipment_id", matchingHandler.GetBackhauling)
+
+		// Tracking routes
+		protectedGroup.GET("/tracking/:shipment_id/status", trackingHandler.GetTrackingStatus)
+		protectedGroup.GET("/tracking/:shipment_id/history", trackingHandler.GetTrackingHistory)
+
+		// Status routes
+		protectedGroup.GET("/status/:shipment_id/history", statusHandler.GetStatusHistory)
+		protectedGroup.GET("/status/:shipment_id/current", statusHandler.GetCurrentStatus)
+		protectedGroup.GET("/status/:shipment_id/summary", statusHandler.GetStatusSummary)
+		protectedGroup.POST("/status/:shipment_id/pickup", statusHandler.RecordPickupEvent)
+		protectedGroup.POST("/status/:shipment_id/deliver", statusHandler.RecordDeliveryEvent)
+
+		// Consolidation routes
+		protectedGroup.GET("/consolidations/:shipment_id", consolidationHandler.GetConsolidationOpportunities)
+		protectedGroup.POST("/consolidations", consolidationHandler.CreateConsolidatedTrip)
+		protectedGroup.GET("/trips/:trip_id/backhauling", consolidationHandler.GetBackhaulOpportunities)
+		protectedGroup.GET("/consolidations/metrics", consolidationHandler.GetConsolidationMetrics)
 	}
 
 	// Admin routes

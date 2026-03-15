@@ -86,6 +86,17 @@ func (sh *ShipmentHandler) ListShipments(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"shipments": shipments})
 }
 
+// GetAvailableShipments lists all shipments available for drivers to match
+func (sh *ShipmentHandler) GetAvailableShipments(c *gin.Context) {
+	shipments, err := sh.shipmentService.GetAllShipments()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"shipments": shipments})
+}
+
 // UpdateShipment updates a shipment
 func (sh *ShipmentHandler) UpdateShipment(c *gin.Context) {
 	id := c.Param("id")

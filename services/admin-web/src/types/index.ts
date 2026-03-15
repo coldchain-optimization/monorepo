@@ -81,6 +81,27 @@ export interface MatchResult {
   estimated_time: number;
   carbon_footprint: number;
   reasons: string[];
+  pricing_breakdown?: PricingBreak;
+  score_details?: ScoreDetails;
+}
+
+export interface PricingBreak {
+  base_rate: number;
+  distance: number;
+  distance_cost: number;
+  refrigeration_cost: number;
+  deviation_cost: number;
+  consolidation_savings: number;
+  total: number;
+}
+
+export interface ScoreDetails {
+  route_overlap: number;
+  temp_match: number;
+  capacity_fit: number;
+  time_match: number;
+  distance_deviation: number;
+  final_score: number;
 }
 
 export interface KnowledgeBase {

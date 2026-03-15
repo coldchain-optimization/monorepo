@@ -12,7 +12,7 @@ import type {
   KnowledgeBase,
 } from '../types';
 
-const API_BASE = 'http://localhost:8080/api/v1';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
 class ApiClient {
   private client: AxiosInstance;
@@ -66,32 +66,37 @@ class ApiClient {
   // ── Admin endpoints ──────────────────────────────────
   async getStats(): Promise<Record<string, number>> {
     const res = await this.client.get('/admin/stats');
-    return res.data;
+    return res.data.stats || {};
   }
 
   async getAllUsers(): Promise<User[]> {
     const res = await this.client.get('/admin/users');
-    return res.data;
+    if (Array.isArray(res.data)) return res.data;
+    return res.data.users || [];
   }
 
   async getAllShipments(): Promise<Shipment[]> {
     const res = await this.client.get('/admin/shipments');
-    return res.data;
+    if (Array.isArray(res.data)) return res.data;
+    return res.data.shipments || [];
   }
 
   async getAllVehicles(): Promise<Vehicle[]> {
     const res = await this.client.get('/admin/vehicles');
-    return res.data;
+    if (Array.isArray(res.data)) return res.data;
+    return res.data.vehicles || [];
   }
 
   async getAllDrivers(): Promise<Driver[]> {
     const res = await this.client.get('/admin/drivers');
-    return res.data;
+    if (Array.isArray(res.data)) return res.data;
+    return res.data.drivers || [];
   }
 
   async getKnowledgeBase(): Promise<KnowledgeBase[]> {
     const res = await this.client.get('/admin/knowledge-base');
-    return res.data;
+    if (Array.isArray(res.data)) return res.data;
+    return res.data.entries || [];
   }
 
   // ── Shippers ─────────────────────────────────────────
@@ -127,7 +132,8 @@ class ApiClient {
 
   async getShipmentMatches(id: string): Promise<MatchResult[]> {
     const res = await this.client.get(`/shipments/${id}/matches`);
-    return res.data;
+    if (Array.isArray(res.data)) return res.data;
+    return res.data.matches || [];
   }
 
   async getShipmentBestMatch(id: string): Promise<MatchResult> {
@@ -157,7 +163,8 @@ class ApiClient {
 
   async getAvailableVehicles(): Promise<Vehicle[]> {
     const res = await this.client.get('/vehicles/available');
-    return res.data;
+    if (Array.isArray(res.data)) return res.data;
+    return res.data.vehicles || [];
   }
 
   // ── Drivers ──────────────────────────────────────────
@@ -178,19 +185,22 @@ class ApiClient {
 
   async getDriverVehicles(id: string): Promise<Vehicle[]> {
     const res = await this.client.get(`/drivers/${id}/vehicles`);
-    return res.data;
+    if (Array.isArray(res.data)) return res.data;
+    return res.data.vehicles || [];
   }
 
   // ── Matching ─────────────────────────────────────────
   async searchMatches(shipmentId: string): Promise<MatchResult[]> {
     const res = await this.client.post('/matching/search', { shipment_id: shipmentId });
-    return res.data;
+    if (Array.isArray(res.data)) return res.data;
+    return res.data.matches || [];
   }
 
-  async acceptMatch(shipmentId: string, vehicleId: string): Promise<unknown> {
+  async acceptMatch(shipmentId: string, vehicleId: string, driverId: string): Promise<unknown> {
     const res = await this.client.post('/matching/accept', {
       shipment_id: shipmentId,
       vehicle_id: vehicleId,
+      driver_id: driverId,
     });
     return res.data;
   }
@@ -211,9 +221,21 @@ class ApiClient {
     return res.data;
   }
 
+  // ── Tracking ─────────────────────────────────────────
+  async getTrackingStatus(shipmentId: string): Promise<unknown> {
+    const res = await this.client.get(`/tracking/${shipmentId}/status`);
+    return res.data;
+  }
+
+  async getTrackingHistory(shipmentId: string): Promise<unknown> {
+    const res = await this.client.get(`/tracking/${shipmentId}/history`);
+    return res.data;
+  }
+
   // ── Health ───────────────────────────────────────────
   async healthCheck(): Promise<{ status: string }> {
-    const res = await this.client.get('/health');
+    const healthBase = API_BASE.replace(/\/api\/v1\/?$/, '');
+    const res = await axios.get(`${healthBase}/health`);
     return res.data;
   }
 }

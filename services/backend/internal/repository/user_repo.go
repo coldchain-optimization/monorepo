@@ -65,3 +65,27 @@ func (r *UserRepository) DeleteUser(id string) error {
 	_, err := r.db.Exec(query, id)
 	return err
 }
+
+func (r *UserRepository) GetAllUsers() ([]*domain.User, error) {
+	query := `
+		SELECT id, email, password, first_name, last_name, role, created_at, updated_at
+		FROM users ORDER BY created_at DESC
+	`
+	rows, err := r.db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var users []*domain.User
+	for rows.Next() {
+		user := &domain.User{}
+		err := rows.Scan(&user.ID, &user.Email, &user.Password, &user.FirstName, &user.LastName, &user.Role, &user.CreatedAt, &user.UpdatedAt)
+		if err != nil {
+			return nil, err
+		}
+		users = append(users, user)
+	}
+
+	return users, rows.Err()
+}

@@ -5,6 +5,7 @@
   "private": true,
   "scripts": {
     "dev:backend": "cd services/backend && go run ./cmd/api/main.go",
+    "dev:driver-app": "cd services/driver-app && npm run start:lan",
     "build:backend": "cd services/backend && go build -o bin/api ./cmd/api",
     "test": "echo \"Run tests in backend: cd services/backend && go test ./...\""
   },

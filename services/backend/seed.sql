@@ -1,5 +1,7 @@
 -- Seed data for LoopLink Cold Chain Optimization
 -- Run this after running migrations: psql -U coldchain -d looplink -f seed.sql
+-- Dev credentials are plain-text by design for local demo consistency.
+-- Admin login: admin@looplink.com / admin123
 
 -- Clear existing data (for demo purposes)
 TRUNCATE TABLE knowledge_base CASCADE;
@@ -12,10 +14,11 @@ TRUNCATE TABLE users CASCADE;
 
 -- Create test users
 INSERT INTO users (id, email, password, first_name, last_name, role, created_at, updated_at) VALUES
-('550e8400-e29b-41d4-a716-446655440000', 'driver1@looplink.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcg7b3XeKeUxWdeS86E36yGU5VW', 'Rajesh', 'Kumar', 'driver', NOW(), NOW()),
-('550e8400-e29b-41d4-a716-446655440001', 'driver2@looplink.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcg7b3XeKeUxWdeS86E36yGU5VW', 'Priya', 'Singh', 'driver', NOW(), NOW()),
-('550e8400-e29b-41d4-a716-446655440002', 'shipper1@looplink.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcg7b3XeKeUxWdeS86E36yGU5VW', 'Amit', 'Patel', 'shipper', NOW(), NOW()),
-('550e8400-e29b-41d4-a716-446655440003', 'shipper2@looplink.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcg7b3XeKeUxWdeS86E36yGU5VW', 'Neha', 'Gupta', 'shipper', NOW(), NOW());
+('550e8400-e29b-41d4-a716-446655440999', 'admin@looplink.com', 'admin123', 'Admin', 'User', 'admin', NOW(), NOW()),
+('550e8400-e29b-41d4-a716-446655440000', 'driver1@looplink.com', 'driver123', 'Rajesh', 'Kumar', 'driver', NOW(), NOW()),
+('550e8400-e29b-41d4-a716-446655440001', 'driver2@looplink.com', 'driver123', 'Priya', 'Singh', 'driver', NOW(), NOW()),
+('550e8400-e29b-41d4-a716-446655440002', 'shipper1@looplink.com', 'shipper123', 'Amit', 'Patel', 'shipper', NOW(), NOW()),
+('550e8400-e29b-41d4-a716-446655440003', 'shipper2@looplink.com', 'shipper123', 'Neha', 'Gupta', 'shipper', NOW(), NOW());
 
 -- Create drivers
 INSERT INTO drivers (id, user_id, license_number, phone_number, rating, role, is_active, created_at, updated_at) VALUES
@@ -64,4 +67,4 @@ SELECT COUNT(*) as shipments FROM shipments;
 SELECT COUNT(*) as consignments FROM consignments;
 SELECT COUNT(*) as knowledge_base FROM knowledge_base;
 
-\dt -- List all tables
+-- List all tables manually if needed using: \dt

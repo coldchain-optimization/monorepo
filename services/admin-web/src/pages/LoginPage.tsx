@@ -39,7 +39,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-slate-100">
+    <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-blue-50 to-slate-100">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8">
         {/* Brand */}
         <div className="flex items-center justify-center gap-2 mb-8">
@@ -64,7 +64,7 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               className="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-              placeholder="admin@example.com"
+              placeholder="testadmin@test.com"
             />
           </div>
 
@@ -78,9 +78,13 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               className="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-              placeholder="••••••••"
+              placeholder="test@123"
             />
           </div>
+
+          <p className="text-xs text-slate-500">
+            Demo login: testadmin@test.com / test@123
+          </p>
 
           <button
             type="submit"

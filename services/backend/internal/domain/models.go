@@ -130,13 +130,36 @@ type MatchingRequest struct {
 
 // MatchResult represents the result of a matching operation
 type MatchResult struct {
-	VehicleID       string   `json:"vehicle_id"`
-	DriverID        string   `json:"driver_id"`
-	MatchScore      float64  `json:"match_score"`
-	EstimatedCost   float64  `json:"estimated_cost"`
-	EstimatedTime   int      `json:"estimated_time"` // in minutes
-	CarbonFootprint float64  `json:"carbon_footprint"`
-	Reasons         []string `json:"reasons"`
+	VehicleID        string        `json:"vehicle_id"`
+	DriverID         string        `json:"driver_id"`
+	MatchScore       float64       `json:"match_score"` // 0-1 scale
+	EstimatedCost    float64       `json:"estimated_cost"`
+	PricingBreakdown *PricingBreak `json:"pricing_breakdown"`
+	EstimatedTime    int           `json:"estimated_time"` // in minutes
+	CarbonFootprint  float64       `json:"carbon_footprint"`
+	Reasons          []string      `json:"reasons"`
+	ScoreDetails     *ScoreDetails `json:"score_details"`
+}
+
+// PricingBreak shows itemized costs
+type PricingBreak struct {
+	BaseRate             float64 `json:"base_rate"`             // per km
+	Distance             float64 `json:"distance"`              // km
+	DistanceCost         float64 `json:"distance_cost"`         // base × distance
+	RefrigerationCost    float64 `json:"refrigeration_cost"`    // if temp required
+	DeviationCost        float64 `json:"deviation_cost"`        // extra stops/detours
+	ConsolidationSavings float64 `json:"consolidation_savings"` // if consolidated
+	Total                float64 `json:"total"`
+}
+
+// ScoreDetails shows breakdown of match score calculation
+type ScoreDetails struct {
+	RouteOverlap      float64 `json:"route_overlap"`      // 0-1, weighted 0.30
+	TempMatch         float64 `json:"temp_match"`         // 0-1, weighted 0.25
+	CapacityFit       float64 `json:"capacity_fit"`       // 0-1, weighted 0.20
+	TimeMatch         float64 `json:"time_match"`         // 0-1, weighted 0.15
+	DistanceDeviation float64 `json:"distance_deviation"` // 0-1, weighted 0.10
+	FinalScore        float64 `json:"final_score"`        // 0-1
 }
 
 // KnowledgeBase represents ML training data for matching
@@ -163,4 +186,52 @@ type RouteData struct {
 	EstimatedTime   int     `json:"estimated_time"`   // in minutes
 	CarbonFootprint float64 `json:"carbon_footprint"` // in kg CO2
 	Cost            float64 `json:"cost"`
+}
+
+// TrackingEvent represents a GPS location event during transit
+type TrackingEvent struct {
+	ID                   string    `json:"id"`
+	ShipmentID           string    `json:"shipment_id"`
+	VehicleID            string    `json:"vehicle_id"`
+	Latitude             float64   `json:"latitude"`
+	Longitude            float64   `json:"longitude"`
+	Speed                float64   `json:"speed"`       // km/h
+	Heading              float64   `json:"heading"`     // 0-360 degrees
+	Temperature          int       `json:"temperature"` // Current vehicle temp
+	Status               string    `json:"status"`      // "in_transit", "stopped", "idle"
+	DistanceTraveledKm   float64   `json:"distance_traveled_km"`
+	DistanceRemainingKm  float64   `json:"distance_remaining_km"`
+	EstimatedArrivalTime time.Time `json:"estimated_arrival_time"`
+	CreatedAt            time.Time `json:"created_at"`
+}
+
+// TrackingSummary represents current shipment tracking status
+type TrackingSummary struct {
+	ShipmentID          string    `json:"shipment_id"`
+	CurrentLocation     string    `json:"current_location"`
+	Latitude            float64   `json:"latitude"`
+	Longitude           float64   `json:"longitude"`
+	Status              string    `json:"status"`
+	DriverName          string    `json:"driver_name"`
+	VehicleInfo         string    `json:"vehicle_info"`
+	DistanceTraveledKm  float64   `json:"distance_traveled_km"`
+	DistanceRemainingKm float64   `json:"distance_remaining_km"`
+	EstimatedArrival    time.Time `json:"estimated_arrival"`
+	Speed               float64   `json:"speed"`
+	Temperature         int       `json:"temperature"`
+	LastUpdate          time.Time `json:"last_update"`
+}
+
+// StatusEvent represents a status change event during shipment lifecycle
+type StatusEvent struct {
+	ID          string    `json:"id"`
+	ShipmentID  string    `json:"shipment_id"`
+	DriverID    string    `json:"driver_id"`
+	Status      string    `json:"status"` // "pickup", "in_transit", "delivered"
+	Location    string    `json:"location"`
+	Latitude    float64   `json:"latitude"`
+	Longitude   float64   `json:"longitude"`
+	Description string    `json:"description"`
+	ProofImage  string    `json:"proof_image"` // Base64 encoded image or URL
+	CreatedAt   time.Time `json:"created_at"`
 }

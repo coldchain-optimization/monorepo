@@ -27,7 +27,13 @@ func (r *KnowledgeBaseRepository) CreateEntry(kb *domain.KnowledgeBase) error {
 func (r *KnowledgeBaseRepository) GetEntryByID(id string) (*domain.KnowledgeBase, error) {
 	kb := &domain.KnowledgeBase{}
 	query := `
-		SELECT id, shipment_id, vehicle_id, match_score, estimated_cost, actual_cost, pricing_factor, time_factor, carbon_factor, route_metadata, created_at, updated_at
+		SELECT id, shipment_id, vehicle_id, match_score,
+			COALESCE(estimated_cost, 0),
+			COALESCE(actual_cost, 0),
+			COALESCE(pricing_factor, 0),
+			COALESCE(time_factor, 0),
+			COALESCE(carbon_factor, 0),
+			route_metadata, created_at, updated_at
 		FROM knowledge_base WHERE id = $1
 	`
 	err := r.db.QueryRow(query, id).Scan(&kb.ID, &kb.ShipmentID, &kb.VehicleID, &kb.MatchScore, &kb.EstimatedCost, &kb.ActualCost, &kb.PricingFactor, &kb.TimeFactor, &kb.CarbonFactor, &kb.RouteMetadata, &kb.CreatedAt, &kb.UpdatedAt)
@@ -42,7 +48,13 @@ func (r *KnowledgeBaseRepository) GetEntryByID(id string) (*domain.KnowledgeBase
 
 func (r *KnowledgeBaseRepository) GetEntriesByShipmentID(shipmentID string) ([]*domain.KnowledgeBase, error) {
 	query := `
-		SELECT id, shipment_id, vehicle_id, match_score, estimated_cost, actual_cost, pricing_factor, time_factor, carbon_factor, route_metadata, created_at, updated_at
+		SELECT id, shipment_id, vehicle_id, match_score,
+			COALESCE(estimated_cost, 0),
+			COALESCE(actual_cost, 0),
+			COALESCE(pricing_factor, 0),
+			COALESCE(time_factor, 0),
+			COALESCE(carbon_factor, 0),
+			route_metadata, created_at, updated_at
 		FROM knowledge_base WHERE shipment_id = $1 ORDER BY match_score DESC
 	`
 	rows, err := r.db.Query(query, shipmentID)
@@ -65,7 +77,13 @@ func (r *KnowledgeBaseRepository) GetEntriesByShipmentID(shipmentID string) ([]*
 
 func (r *KnowledgeBaseRepository) GetAllEntries() ([]*domain.KnowledgeBase, error) {
 	query := `
-		SELECT id, shipment_id, vehicle_id, match_score, estimated_cost, actual_cost, pricing_factor, time_factor, carbon_factor, route_metadata, created_at, updated_at
+		SELECT id, shipment_id, vehicle_id, match_score,
+			COALESCE(estimated_cost, 0),
+			COALESCE(actual_cost, 0),
+			COALESCE(pricing_factor, 0),
+			COALESCE(time_factor, 0),
+			COALESCE(carbon_factor, 0),
+			route_metadata, created_at, updated_at
 		FROM knowledge_base ORDER BY created_at DESC
 	`
 	rows, err := r.db.Query(query)
@@ -104,7 +122,13 @@ func (r *KnowledgeBaseRepository) DeleteEntry(id string) error {
 
 func (r *KnowledgeBaseRepository) GetHighScoreEntries(minScore float64) ([]*domain.KnowledgeBase, error) {
 	query := `
-		SELECT id, shipment_id, vehicle_id, match_score, estimated_cost, actual_cost, pricing_factor, time_factor, carbon_factor, route_metadata, created_at, updated_at
+		SELECT id, shipment_id, vehicle_id, match_score,
+			COALESCE(estimated_cost, 0),
+			COALESCE(actual_cost, 0),
+			COALESCE(pricing_factor, 0),
+			COALESCE(time_factor, 0),
+			COALESCE(carbon_factor, 0),
+			route_metadata, created_at, updated_at
 		FROM knowledge_base WHERE match_score >= $1 ORDER BY match_score DESC
 	`
 	rows, err := r.db.Query(query, minScore)

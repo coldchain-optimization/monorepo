@@ -1,263 +1,87 @@
-# LoopLink Logistics Platform - Refactored Monorepo
+# LoopLink Monorepo
 
-A complete logistics matching and route optimization platform with a modern microservices architecture.
+Cold-chain logistics platform with:
+- `services/backend`: Go + Gin API
+- `services/driver-web`: React + Vite (JSX)
+- `services/admin-web`: React + Vite (TypeScript)
 
-## Project Structure
+## Quick Start
 
-```
-refactored/
-├── apps/
-│   ├── admin-web/          # Admin Dashboard (React + TypeScript + Vite)
-│   ├── driver-web/         # Driver Dashboard (React + TypeScript + Vite)
-│   └── driver-app/         # Driver Mobile App (React Native + Expo)
-├── services/
-│   └── backend/            # Go-based API Server & Matching Engine
-├── docker-compose.yml      # Local development setup
-├── package.json           # Monorepo root package.json
-└── README.md
-```
-
-## Features
-
-### Admin Dashboard (adminWeb)
-- **Order Management**: Create and manage shipment orders
-- **Packaging Management**: Handle packaging and logistics
-- **Schedule Planning**: View and manage delivery schedules
-- **Shipment Tracking**: Monitor all active shipments
-- **Real-time Dashboard**: Live status updates
-
-### Driver Dashboard (driverWeb)
-- **Delivery Management**: View assigned deliveries
-- **Route Optimization**: Optimized routes with Google Maps integration
-- **Real-time Tracking**: Live location updates
-- **Performance Metrics**: Track earnings and deliveries
-- **Responsive Design**: Works on all devices
-
-### Driver Mobile App (driverApp)
-- **On-the-Go Management**: Complete mobile experience
-- **GPS Integration**: Real-time location tracking
-- **Offline Support**: Work without internet connection
-- **Push Notifications**: Instant delivery alerts
-- **Native Performance**: React Native for iOS and Android
-
-### Backend API (Go)
-- **Matching Engine**: ML-ready hardcoded matching logic
-  - Matches shipments to vehicles based on:
-    - Cost constraints
-    - Temperature requirements
-    - Weight/Capacity constraints
-    - Time windows
-    - Carbon footprint metrics
-  
-- **Route Optimization**: Integration-ready for Google Maps API
-  - Multi-stop route calculation
-  - Backhauling support
-  - Real-time ETAs
-
-- **Authentication**: JWT-based secure authentication
-  - Role-based access (Admin, Driver, Shipper)
-  - Secure token management
-
-- **RESTful API**: Complete CRUD operations for:
-  - Users & Authentication
-  - Shipments & Orders
-  - Vehicles & Drivers
-  - Route Optimization
-  - Matching Results
-
-- **Knowledge Base**: Extensible data structure for ML integration
-  - Shipment metadata storage
-  - Vehicle specifications
-  - Historical matching data
-  - Performance metrics
-
-## Technology Stack
-
-### Frontend
-- **Framework**: React 19 + TypeScript
-- **Build Tool**: Vite
-- **Mobile**: React Native + Expo
-- **Styling**: Tailwind CSS
-- **UI Components**: Radix UI / shadcn/ui
-- **Maps**: Leaflet + Google Maps API
-- **State Management**: React Router
-- **Animations**: Framer Motion
-
-### Backend
-- **Language**: Go 1.21+
-- **Framework**: Gin Web Framework
-- **Database**: PostgreSQL
-- **Authentication**: JWT (golang-jwt)
-- **Maps API**: Google Maps Go Client
-- **Testing**: Go testing package
-- **Deployment**: Docker & Docker Compose
-
-### Infrastructure
-- **Containerization**: Docker
-- **Orchestration**: Docker Compose (local dev)
-- **Package Management**: npm (monorepo workspaces)
-
-## Getting Started
-
-### Prerequisites
-- Node.js 20.19+ or 22.12+
-- Go 1.21+
-- PostgreSQL 12+
-- Docker & Docker Compose (optional)
-
-### Installation
-
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd refactored
-   ```
-
-2. **Install dependencies**
-   ```bash
-   # Install Node dependencies for all workspaces
-   npm install
-   
-   # Install Go dependencies (in services/backend)
-   cd services/backend
-   go mod download
-   ```
-
-3. **Setup environment variables**
-   ```bash
-   # Backend
-   cp services/backend/.env.example services/backend/.env
-   
-   # Configure your database, JWT secret, and API keys
-   ```
-
-4. **Setup database**
-   ```bash
-   cd services/backend
-   go run ./cmd/migration/main.go
-   ```
-
-### Running the Applications
-
-#### Development Mode - All Services
+### 1. Start PostgreSQL
+Use Docker Compose v2:
 
 ```bash
-# From root directory
-npm run dev:all
-
-# Or run individually:
-npm run dev:admin          # Admin Dashboard on localhost:5173
-npm run dev:driver-web     # Driver Dashboard on localhost:5174
-npm run dev:backend        # Backend API on localhost:8080
+docker compose up -d postgres
 ```
 
-#### Production Build
+### 2. Initialize Database + Seed Demo Data
 
 ```bash
-# Build all applications
-npm run build:all
-
-# Backend binary will be at: services/backend/bin/api
+cd services/backend
+PGPASSWORD=postgres psql -h localhost -U postgres -d looplink -f migrations/init.sql
+PGPASSWORD=postgres psql -h localhost -U postgres -d looplink -f seed.sql
 ```
 
-## API Documentation
+### 3. Run Backend
 
-### Base URL
-```
-http://localhost:8080/api/v1
-```
-
-### Authentication
-All API requests require a JWT token in the `Authorization` header:
-```
-Authorization: Bearer <jwt_token>
+```bash
+cd services/backend
+go run cmd/api/main.go
 ```
 
-### Key Endpoints
+Backend health:
 
-#### Authentication
-- `POST /auth/signup` - Register new user
-- `POST /auth/login` - Login and get JWT token
-- `POST /auth/refresh` - Refresh expired token
+```bash
+curl http://localhost:8080/health
+```
 
-#### Shipments
-- `POST /shipments` - Create new shipment
-- `GET /shipments` - List all shipments
-- `GET /shipments/{id}` - Get shipment details
-- `PUT /shipments/{id}` - Update shipment
-- `DELETE /shipments/{id}` - Delete shipment
+### 4. Run Frontends
 
-#### Vehicles
-- `POST /vehicles` - Register new vehicle
-- `GET /vehicles` - List all vehicles
-- `GET /vehicles/{id}` - Get vehicle details
-- `PUT /vehicles/{id}` - Update vehicle
+Driver Web:
 
-#### Matching Engine
-- `POST /matching/search` - Find best vehicle for shipment
-  ```json
-  {
-    "shipment_id": "string",
-    "max_budget": 1000.0,
-    "temp_requirement": "5-15°C",
-    "weight_kg": 500,
-    "distance_km": 100
-  }
-  ```
+```bash
+cd services/driver-web
+npm install
+npm run dev
+```
 
-#### Route Optimization
-- `POST /routes/optimize` - Calculate optimal route
-  ```json
-  {
-    "driver_id": "string",
-    "shipment_ids": ["id1", "id2"],
-    "start_location": "lat,lon",
-    "end_location": "lat,lon"
-  }
-  ```
+Admin Web:
 
-## Matching Engine Architecture
+```bash
+cd services/admin-web
+npm install
+npm run dev
+```
 
-### Hardcoded Logic (Phase 1)
-The matching engine currently uses deterministic rules to match shipments with vehicles:
+Ports:
+- Driver: `http://localhost:5173`
+- Admin: `http://localhost:5174`
+- Backend: `http://localhost:8080`
 
-1. **Cost Filter**: Exclude vehicles exceeding budget
-2. **Capacity Check**: Verify weight/volume constraints
-3. **Temperature Match**: Match temp requirements
-4. **Time Window**: Check delivery time feasibility
-5. **Scoring**: Calculate match score based on:
-   - Cost efficiency (80% weight)
-   - Carbon footprint (10% weight)
-   - Time efficiency (10% weight)
+## Standard Dev Credentials
 
-### ML Integration (Phase 2 - Future)
-The knowledge base stores all matching data for ML model training:
-- Historical shipment metadata
-- Vehicle specifications
-- Matching outcomes and feedback
-- Performance metrics
+Seeded credentials are standardized in `services/backend/seed.sql`.
 
-ML models will be integrated via API to replace the hardcoded logic.
+- Admin: `admin@looplink.com` / `admin123`
+- Driver: `driver1@looplink.com` / `driver123`
+- Shipper: `shipper1@looplink.com` / `shipper123`
 
-## Database Schema
+## Notes on Password Handling
 
-### Core Tables
-- `users` - User accounts (drivers, admins, shippers)
-- `vehicles` - Vehicle inventory with specifications
-- `shipments` - Shipment orders with requirements
-- `matching_history` - Historical matching records
-- `routes` - Route optimization data
-- `deliveries` - Delivery tracking information
+- New users created through `/api/v1/public/auth/signup` are still bcrypt-hashed.
+- Seeded demo users are plain-text for predictable local setup.
+- Login supports both hashed and seeded plain-text passwords to keep local development friction-free.
 
-### Knowledge Base Tables
-- `kb_shipments` - Shipment metadata for ML
-- `kb_vehicles` - Vehicle specifications
-- `kb_matching_rules` - Configurable matching rules
+## Admin API Endpoints (Implemented)
 
-## Development Guidelines
+- `GET /api/v1/admin/stats`
+- `GET /api/v1/admin/users`
+- `GET /api/v1/admin/shipments`
+- `GET /api/v1/admin/vehicles`
+- `GET /api/v1/admin/drivers`
+- `GET /api/v1/admin/knowledge-base`
 
-### Code Structure
-- **Clear separation of concerns**: handlers → services → repositories → database
+All require an admin JWT token.
 - **Dependency injection**: Services receive dependencies via constructors
 - **Interface-based design**: Easy to mock and test
 - **Error handling**: Consistent error responses

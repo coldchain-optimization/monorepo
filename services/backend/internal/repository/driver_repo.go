@@ -58,8 +58,9 @@ func (r *DriverRepository) GetDriverByUserID(userID string) (*domain.Driver, err
 
 func (r *DriverRepository) GetAllDrivers() ([]*domain.Driver, error) {
 	query := `
-		SELECT id, user_id, license_number, phone_number, rating, role, is_active, created_at, updated_at
-		FROM drivers ORDER BY created_at DESC
+		SELECT d.id, d.user_id, d.license_number, d.phone_number, d.rating, d.role, d.is_active, d.created_at, d.updated_at
+		FROM drivers d
+		ORDER BY d.created_at DESC
 	`
 	rows, err := r.db.Query(query)
 	if err != nil {
@@ -73,6 +74,50 @@ func (r *DriverRepository) GetAllDrivers() ([]*domain.Driver, error) {
 		err := rows.Scan(&driver.ID, &driver.UserID, &driver.LicenseNumber, &driver.PhoneNumber, &driver.Rating, &driver.Role, &driver.IsActive, &driver.CreatedAt, &driver.UpdatedAt)
 		if err != nil {
 			return nil, err
+		}
+		drivers = append(drivers, driver)
+	}
+	return drivers, rows.Err()
+}
+
+func (r *DriverRepository) GetAllDriversWithUsers() ([]map[string]interface{}, error) {
+	query := `
+		SELECT d.id, d.user_id, d.license_number, d.phone_number, d.rating, d.role, d.is_active, d.created_at, d.updated_at,
+		       u.email, u.first_name, u.last_name
+		FROM drivers d
+		INNER JOIN users u ON d.user_id = u.id
+		ORDER BY d.created_at DESC
+	`
+	rows, err := r.db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var drivers []map[string]interface{}
+	for rows.Next() {
+		var id, userID, licenseNumber, phoneNumber, role, email, firstName, lastName, createdAt, updatedAt string
+		var rating float64
+		var isActive bool
+
+		err := rows.Scan(&id, &userID, &licenseNumber, &phoneNumber, &rating, &role, &isActive, &createdAt, &updatedAt, &email, &firstName, &lastName)
+		if err != nil {
+			return nil, err
+		}
+
+		driver := map[string]interface{}{
+			"id":             id,
+			"user_id":        userID,
+			"license_number": licenseNumber,
+			"phone_number":   phoneNumber,
+			"rating":         rating,
+			"role":           role,
+			"is_active":      isActive,
+			"created_at":     createdAt,
+			"updated_at":     updatedAt,
+			"email":          email,
+			"first_name":     firstName,
+			"last_name":      lastName,
 		}
 		drivers = append(drivers, driver)
 	}

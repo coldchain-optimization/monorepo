@@ -104,38 +104,38 @@ export default function DashboardPage() {
       {/* Stat cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         <StatCard
-          label="Total Users"
-          value={stats.total_users ?? 0}
+          label="Total Drivers"
+          value={stats.total_drivers ?? 0}
           icon={Users}
           color="bg-blue-500"
         />
         <StatCard
-          label="Shippers"
-          value={stats.total_shippers ?? 0}
+          label="Pending Shipments"
+          value={stats.pending_shipments ?? 0}
           icon={UserCheck}
           color="bg-emerald-500"
         />
         <StatCard
-          label="Drivers"
-          value={stats.total_drivers ?? 0}
+          label="Available Vehicles"
+          value={stats.available_vehicles ?? 0}
           icon={UserCheck}
           color="bg-violet-500"
         />
         <StatCard
-          label="Shipments"
-          value={stats.total_shipments ?? 0}
+          label="Total Shipments"
+          value={shipments.length}
           icon={Package}
           color="bg-amber-500"
         />
         <StatCard
-          label="Vehicles"
-          value={stats.total_vehicles ?? 0}
+          label="Total Vehicles"
+          value={vehicles.length}
           icon={Truck}
           color="bg-rose-500"
         />
         <StatCard
-          label="KB Entries"
-          value={stats.total_knowledge_base ?? 0}
+          label="Booked Shipments"
+          value={shipments.filter((s) => s.status === 'booked').length}
           icon={Activity}
           color="bg-cyan-500"
         />
