@@ -28,8 +28,8 @@ import ShipmentDecisionModal from './src/components/ShipmentDecisionModal';
 function AppContent() {
   const [token, setToken] = useState(null);
   const [user, setUser] = useState(null);
-  const [email, setEmail] = useState('driver1@looplink.com');
-  const [password, setPassword] = useState('driver123');
+  const [email, setEmail] = useState(process.env.EXPO_PUBLIC_DEMO_EMAIL || 'driver1@looplink.com');
+  const [password, setPassword] = useState(process.env.EXPO_PUBLIC_DEMO_PASSWORD || 'changeme');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [tab, setTab] = useState(TABS.DASHBOARD);
