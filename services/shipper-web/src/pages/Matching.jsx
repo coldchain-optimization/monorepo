@@ -129,7 +129,7 @@ export default function Matching() {
                         <p className="text-xs text-blue-600 italic mt-1">💡 {m.explanation}</p>
                       )}
                       <p className="text-sm text-gray-600">
-                        Vehicle: {m.vehicle_id?.slice(0, 8)}... · Driver: {m.driver_id?.slice(0, 8)}...
+                        Matched Vehicle & Driver
                       </p>
                       <p className="text-sm text-gray-600 mt-1">
                         Est. Time: {m.estimated_time} min · CO₂: {m.carbon_footprint?.toFixed(2)} kg

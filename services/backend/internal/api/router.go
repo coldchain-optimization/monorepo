@@ -47,6 +47,7 @@ func SetupRouter(db *sql.DB, cfg *config.Config) *gin.Engine {
 	userRepo := repository.NewUserRepository(db)
 	shipmentRepo := repository.NewShipmentRepository(db)
 	vehicleRepo := repository.NewVehicleRepository(db)
+        trackingRepo := repository.NewTrackingRepository(db)
 	driverRepo := repository.NewDriverRepository(db)
 	shipperRepo := repository.NewShipperRepository(db)
 	consignmentRepo := repository.NewConsignmentRepository(db)
@@ -64,7 +65,7 @@ func SetupRouter(db *sql.DB, cfg *config.Config) *gin.Engine {
 		cfg.MLBlendWeight,
 	)
 	geocodingService := services.NewGeocodingService(geocodingCacheRepo)
-	trackingService := services.NewTrackingService(shipmentRepo, vehicleRepo, geocodingService)
+	trackingService := services.NewTrackingService(shipmentRepo, vehicleRepo, geocodingService, trackingRepo)
 	statusService := services.NewStatusService()
 	matchingEngine := services.NewMatchingEngine(shipmentRepo, vehicleRepo, routeService)
 	consolidationService := services.NewConsolidationService()
@@ -156,9 +157,7 @@ func SetupRouter(db *sql.DB, cfg *config.Config) *gin.Engine {
 		// Tracking routes
 		protectedGroup.GET("/tracking/:shipment_id/status", trackingHandler.GetTrackingStatus)
 		protectedGroup.GET("/tracking/:shipment_id/history", trackingHandler.GetTrackingHistory)
-
-		// Status routes
-		protectedGroup.GET("/status/:shipment_id/history", statusHandler.GetStatusHistory)
+                protectedGroup.POST("/tracking/:shipment_id/location", trackingHandler.UpdateLocation)
 		protectedGroup.GET("/status/:shipment_id/current", statusHandler.GetCurrentStatus)
 		protectedGroup.GET("/status/:shipment_id/summary", statusHandler.GetStatusSummary)
 		protectedGroup.POST("/status/:shipment_id/pickup", statusHandler.RecordPickupEvent)

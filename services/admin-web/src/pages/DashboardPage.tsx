@@ -23,7 +23,7 @@ import {
 } from 'recharts';
 import type { Shipment, Vehicle } from '../types';
 
-const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+const COLORS = ['#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
 interface StatCardProps {
   label: string;
@@ -34,13 +34,13 @@ interface StatCardProps {
 
 function StatCard({ label, value, icon: Icon, color }: StatCardProps) {
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-6 flex items-start gap-4">
+    <div className="bg-white/5 rounded-xl border border-white/10 backdrop-blur-md p-6 flex items-start gap-4">
       <div className={`p-3 rounded-lg ${color}`}>
         <Icon className="h-6 w-6 text-white" />
       </div>
       <div>
-        <p className="text-sm text-slate-500">{label}</p>
-        <p className="text-2xl font-bold text-slate-800">{value}</p>
+        <p className="text-sm text-gray-400">{label}</p>
+        <p className="text-2xl font-bold text-white">{value}</p>
       </div>
     </div>
   );
@@ -95,8 +95,8 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-800">Dashboard</h1>
-        <p className="text-slate-500 text-sm mt-1">
+        <h1 className="text-2xl font-bold text-white">Dashboard</h1>
+        <p className="text-gray-400 text-sm mt-1">
           Cold-chain logistics overview
         </p>
       </div>
@@ -144,9 +144,9 @@ export default function DashboardPage() {
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Shipment statuses */}
-        <div className="bg-white rounded-xl border border-slate-200 p-6">
-          <h2 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-blue-600" />
+        <div className="bg-white/5 rounded-xl border border-white/10 backdrop-blur-md p-6">
+          <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+            <TrendingUp className="h-5 w-5 text-violet-400" />
             Shipment Statuses
           </h2>
           {statusChartData.length > 0 ? (
@@ -174,30 +174,30 @@ export default function DashboardPage() {
               </PieChart>
             </ResponsiveContainer>
           ) : (
-            <p className="text-slate-400 text-sm text-center py-16">
+            <p className="text-gray-500 text-sm text-center py-16">
               No shipment data yet
             </p>
           )}
         </div>
 
         {/* Vehicle types */}
-        <div className="bg-white rounded-xl border border-slate-200 p-6">
-          <h2 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
-            <Truck className="h-5 w-5 text-blue-600" />
+        <div className="bg-white/5 rounded-xl border border-white/10 backdrop-blur-md p-6">
+          <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+            <Truck className="h-5 w-5 text-violet-400" />
             Vehicle Types
           </h2>
           {vehicleChartData.length > 0 ? (
             <ResponsiveContainer width="100%" height={280}>
               <BarChart data={vehicleChartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                 <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                 <YAxis allowDecimals={false} />
                 <Tooltip />
-                <Bar dataKey="count" fill="#3b82f6" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="count" fill="#8b5cf6" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <p className="text-slate-400 text-sm text-center py-16">
+            <p className="text-gray-500 text-sm text-center py-16">
               No vehicle data yet
             </p>
           )}
@@ -205,15 +205,15 @@ export default function DashboardPage() {
       </div>
 
       {/* Recent shipments table */}
-      <div className="bg-white rounded-xl border border-slate-200 p-6">
-        <h2 className="text-lg font-semibold text-slate-800 mb-4">
+      <div className="bg-white/5 rounded-xl border border-white/10 backdrop-blur-md p-6">
+        <h2 className="text-lg font-semibold text-white mb-4">
           Recent Shipments
         </h2>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-slate-500 border-b border-slate-200">
-                <th className="pb-3 font-medium">ID</th>
+              <tr className="text-left text-gray-400 border-b border-white/10">
+                
                 <th className="pb-3 font-medium">From</th>
                 <th className="pb-3 font-medium">To</th>
                 <th className="pb-3 font-medium">Type</th>
@@ -221,12 +221,9 @@ export default function DashboardPage() {
                 <th className="pb-3 font-medium">Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-white/10">
               {shipments.slice(0, 10).map((s) => (
-                <tr key={s.id} className="hover:bg-slate-50">
-                  <td className="py-3 font-mono text-xs text-slate-500">
-                    {s.id.slice(0, 8)}…
-                  </td>
+                <tr key={s.id} className="hover:bg-white/5">
                   <td className="py-3">{s.source_location}</td>
                   <td className="py-3">{s.destination_location}</td>
                   <td className="py-3">{s.load_type}</td>
@@ -238,7 +235,7 @@ export default function DashboardPage() {
               ))}
               {shipments.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-slate-400">
+                  <td colSpan={5} className="py-8 text-center text-gray-500">
                     No shipments yet
                   </td>
                 </tr>
@@ -253,16 +250,16 @@ export default function DashboardPage() {
 
 function StatusBadge({ status }: { status: string }) {
   const colors: Record<string, string> = {
-    pending: 'bg-amber-100 text-amber-700',
-    booked: 'bg-blue-100 text-blue-700',
-    in_transit: 'bg-violet-100 text-violet-700',
-    delivered: 'bg-emerald-100 text-emerald-700',
-    cancelled: 'bg-red-100 text-red-700',
+    pending: 'bg-amber-500/20 text-amber-400',
+    booked: 'bg-blue-500/20 text-blue-400',
+    in_transit: 'bg-violet-500/20 text-violet-400',
+    delivered: 'bg-emerald-500/20 text-emerald-400',
+    cancelled: 'bg-red-500/20 text-red-400',
   };
   return (
     <span
       className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-        colors[status] || 'bg-slate-100 text-slate-600'
+        colors[status] || 'bg-white/10 text-gray-300'
       }`}
     >
       {status.replace('_', ' ')}

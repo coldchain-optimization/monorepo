@@ -15,7 +15,7 @@ import { requestLocationPermission, getCurrentLocation, watchLocation, stopWatch
 import { isWithinLocation, getLocationInfo, calculateDistance } from './src/utils/locationValidation';
 import AlertService from './src/services/alertService';
 import { getCoordsFromLocation } from './src/utils/geo';
-import TopTabs from './src/components/TopTabs';
+import BottomTabs from './src/components/BottomTabs';
 import KpiStrip from './src/components/KpiStrip';
 import LoginScreen from './src/screens/LoginScreen';
 import DashboardScreen from './src/screens/DashboardScreen';
@@ -29,7 +29,7 @@ function AppContent() {
   const [token, setToken] = useState(null);
   const [user, setUser] = useState(null);
   const [email, setEmail] = useState(process.env.EXPO_PUBLIC_DEMO_EMAIL || 'driver1@looplink.com');
-  const [password, setPassword] = useState(process.env.EXPO_PUBLIC_DEMO_PASSWORD || 'changeme');
+  const [password, setPassword] = useState(process.env.EXPO_PUBLIC_DEMO_PASSWORD || 'driver123');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [tab, setTab] = useState(TABS.DASHBOARD);
@@ -125,6 +125,12 @@ function AppContent() {
           };
           
           setTrackingStatus(trackingData);
+
+          // Push new location to the backend
+          api.updateLocation(activeShipment.id, {
+            latitude: locationData.latitude,
+            longitude: locationData.longitude,
+          }).catch(e => console.warn('[App] Error sending location to server', e));
           
           // Add to tracking history
           setTrackingHistory((prev) => [
@@ -563,13 +569,12 @@ function AppContent() {
       <StatusBar style="dark" />
       <View style={styles.header}>
         <View>
-          <Text style={styles.brandPill}>LOOPLINK COLD CHAIN</Text>
           <Text style={styles.headerTitle}>Driver Console</Text>
           <Text style={styles.headerSubtitle}>{isLoggedIn ? tab : 'Secure Login'}</Text>
         </View>
         {isLoggedIn && (
           <Pressable onPress={handleLogout} style={styles.logoutBtn}>
-            <Text style={styles.btnText}>Logout</Text>
+            <Text style={[styles.btnText, { color: '#ffffff' }]}>Logout</Text>
           </Pressable>
         )}
       </View>
@@ -585,9 +590,7 @@ function AppContent() {
           onLogin={handleLogin}
         />
       ) : (
-        <>
-          <TopTabs tabs={TAB_ORDER} activeTab={tab} onChange={setTab} />
-
+        <View style={{ flex: 1 }}>
           <ScrollView contentContainerStyle={styles.content}>
             <KpiStrip
               userFirstName={user?.first_name}
@@ -601,6 +604,8 @@ function AppContent() {
             {error && <Text style={styles.error}>{error}</Text>}
           </ScrollView>
 
+          <BottomTabs tabs={TAB_ORDER} activeTab={tab} onChange={setTab} />
+
           {/* Enhanced Decision Modal */}
           <ShipmentDecisionModal
             visible={decisionModalVisible}
@@ -609,7 +614,7 @@ function AppContent() {
             onReject={handleDecisionModalReject}
             loading={loading}
           />
-        </>
+        </View>
       )}
     </SafeAreaView>
   );

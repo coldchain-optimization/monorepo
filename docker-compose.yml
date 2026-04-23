@@ -49,38 +49,38 @@ services:
     command: go run ./cmd/api/main.go
 
   # Admin Web Frontend (optional - for development)
-  admin-web:
-    build:
-      context: ./apps/admin-web
-      dockerfile: Dockerfile.dev
-    container_name: looplink-admin-web
-    ports:
-      - "5173:5173"
-    environment:
-      VITE_API_URL: http://localhost:8080/api/v1
-    networks:
-      - looplink-network
-    volumes:
-      - ./apps/admin-web:/app
-      - /app/node_modules
-    command: npm run dev
+  # admin-web:
+  #   build:
+  #     context: ./apps/admin-web
+  #     dockerfile: Dockerfile.dev
+  #   container_name: looplink-admin-web
+  #   ports:
+  #     - "5173:5173"
+  #   environment:
+  #     VITE_API_URL: http://localhost:8080/api/v1
+  #   networks:
+  #     - looplink-network
+  #   volumes:
+  #     - ./apps/admin-web:/app
+  #     - /app/node_modules
+  #   command: npm run dev
 
-  # Driver Web Frontend (optional - for development)
-  driver-web:
-    build:
-      context: ./apps/driver-web
-      dockerfile: Dockerfile.dev
-    container_name: looplink-driver-web
-    ports:
-      - "5174:5174"
-    environment:
-      VITE_API_URL: http://localhost:8080/api/v1
-    networks:
-      - looplink-network
-    volumes:
-      - ./apps/driver-web:/app
-      - /app/node_modules
-    command: npm run dev -- --port 5174
+  # # Driver Web Frontend (optional - for development)
+  # driver-web:
+  #   build:
+  #     context: ./apps/driver-web
+  #     dockerfile: Dockerfile.dev
+  #   container_name: looplink-driver-web
+  #   ports:
+  #     - "5174:5174"
+  #   environment:
+  #     VITE_API_URL: http://localhost:8080/api/v1
+  #   networks:
+  #     - looplink-network
+  #   volumes:
+  #     - ./apps/driver-web:/app
+  #     - /app/node_modules
+  #   command: npm run dev -- --port 5174
 
 volumes:
   postgres_data:

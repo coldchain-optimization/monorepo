@@ -14,13 +14,15 @@ type TrackingService struct {
 	shipmentRepo     *repository.ShipmentRepository
 	vehicleRepo      *repository.VehicleRepository
 	geocodingService *GeocodingService
+        trackingRepo     *repository.TrackingRepository
 }
 
-func NewTrackingService(shipmentRepo *repository.ShipmentRepository, vehicleRepo *repository.VehicleRepository, geocodingService *GeocodingService) *TrackingService {
+func NewTrackingService(shipmentRepo *repository.ShipmentRepository, vehicleRepo *repository.VehicleRepository, geocodingService *GeocodingService, trackingRepo *repository.TrackingRepository) *TrackingService {
 	return &TrackingService{
 		shipmentRepo:     shipmentRepo,
 		vehicleRepo:      vehicleRepo,
 		geocodingService: geocodingService,
+                trackingRepo:     trackingRepo,
 	}
 }
 
@@ -96,11 +98,10 @@ func (ts *TrackingService) SimulateVehicleMovement(shipment *domain.Shipment, ve
 // GetTrackingSummary returns current tracking status for a shipment
 func (ts *TrackingService) GetTrackingSummary(shipment *domain.Shipment, vehicle *domain.Vehicle) *domain.TrackingSummary {
 	// Get the most recent tracking event
-	events := ts.SimulateVehicleMovement(shipment, vehicle)
-
-	if len(events) == 0 {
-		return nil
-	}
+        events := ts.GetRealTrackingHistory(shipment, vehicle)
+        if len(events) == 0 {
+                return nil
+        }
 
 	// For simulation, return the latest event
 	latest := events[len(events)-1]
@@ -209,3 +210,53 @@ func (ts *TrackingService) approximateDistanceKm(lat1, lon1, lat2, lon2 float64)
 	c := 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
 	return earthRadiusKm * c
 }
+
+// UpdateVehicleLocation records a new real-time GPS position
+func (ts *TrackingService) UpdateVehicleLocation(shipmentID, vehicleID string, lat, lon float64) error {
+return ts.trackingRepo.SaveLocation(shipmentID, vehicleID, lat, lon)
+}
+
+// GetRealTrackingHistory returns actual tracked points instead of simulated
+func (ts *TrackingService) GetRealTrackingHistory(shipment *domain.Shipment, vehicle *domain.Vehicle) []*domain.TrackingEvent {
+	history, err := ts.trackingRepo.GetTrackingHistory(shipment.ID)
+
+	if err != nil || len(history) == 0 {
+		return ts.SimulateVehicleMovement(shipment, vehicle)
+	}
+
+	startLat, startLon := ts.locationToCoordinates(shipment.SourceLocation, shipment.ID+"-src")
+	endLat, endLon := ts.locationToCoordinates(shipment.DestLocation, shipment.ID+"-dst")
+
+	var events []*domain.TrackingEvent
+	for i, h := range history {
+		traveled := ts.approximateDistanceKm(startLat, startLon, h.Latitude, h.Longitude)
+		remaining := ts.approximateDistanceKm(h.Latitude, h.Longitude, endLat, endLon)
+
+		speed := 0.0
+		if i > 0 {
+			prev := history[i-1]
+			dist := ts.approximateDistanceKm(prev.Latitude, prev.Longitude, h.Latitude, h.Longitude)
+			timeDiff := h.CreatedAt.Sub(prev.CreatedAt).Hours()
+			if timeDiff > 0 {
+				speed = dist / timeDiff
+			}
+		}
+
+		events = append(events, &domain.TrackingEvent{
+			ID:                   fmt.Sprintf("track_real_%d", i),
+			ShipmentID:           shipment.ID,
+			VehicleID:            vehicle.ID,
+			Latitude:             h.Latitude,
+			Longitude:            h.Longitude,
+			Speed:                speed,
+			Temperature:          vehicle.Temperature,
+			Status:               "in_transit",
+			DistanceTraveledKm:   traveled,
+			DistanceRemainingKm:  remaining,
+			EstimatedArrivalTime: time.Now().Add(time.Duration((remaining/50.0)*60) * time.Minute),
+			CreatedAt:            h.CreatedAt,
+		})
+	}
+	return events
+}
+

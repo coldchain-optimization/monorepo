@@ -39,23 +39,23 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-blue-50 to-slate-100">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8">
+    <div className="min-h-screen flex items-center justify-center bg-[#0F1117]">
+      <div className="w-full max-w-md bg-white/5 backdrop-blur-md rounded-2xl shadow-xl p-8">
         {/* Brand */}
         <div className="flex items-center justify-center gap-2 mb-8">
-          <Snowflake className="h-9 w-9 text-blue-600" />
-          <h1 className="text-2xl font-bold text-slate-800">LoopLink Admin</h1>
+          <Snowflake className="h-9 w-9 text-violet-400" />
+          <h1 className="text-2xl font-bold text-white">LoopLink Admin</h1>
         </div>
 
         {error && (
-          <div className="mb-4 p-3 rounded-lg bg-red-50 text-red-700 text-sm">
+          <div className="mb-4 p-3 rounded-lg bg-red-500/100/10 text-red-400 text-sm">
             {error}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+            <label className="block text-sm font-medium text-gray-300 mb-1">
               Email
             </label>
             <input
@@ -63,13 +63,13 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+              className="w-full px-4 py-2.5 rounded-lg border border-white/20 bg-white/5 text-white focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none transition"
               placeholder="testadmin@test.com"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+            <label className="block text-sm font-medium text-gray-300 mb-1">
               Password
             </label>
             <input
@@ -77,19 +77,19 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+              className="w-full px-4 py-2.5 rounded-lg border border-white/20 bg-white/5 text-white focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none transition"
               placeholder="test@123"
             />
           </div>
 
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-gray-400">
             Demo login: testadmin@test.com / test@123
           </p>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2.5 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 disabled:opacity-50 transition"
+            className="w-full py-2.5 rounded-lg bg-violet-600 text-white font-medium hover:bg-violet-500 disabled:opacity-50 transition"
           >
             {loading ? 'Signing in…' : 'Sign In'}
           </button>

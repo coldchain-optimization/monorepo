@@ -102,13 +102,14 @@ export default function TrackingPage() {
       return;
     }
 
+    setAnimationProgress(0);
+
     const loadTracking = async () => {
       try {
         const status = await api.getTrackingStatus(selectedShipmentId);
         const history = await api.getTrackingHistory(selectedShipmentId);
         setTracking(status);
         setTrackingEvents(history?.events || []);
-        setAnimationProgress(0);
 
         // Load status events if endpoint exists
         try {
@@ -152,7 +153,7 @@ export default function TrackingPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600" />
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-500" />
       </div>
     );
   }
@@ -163,31 +164,31 @@ export default function TrackingPage() {
   const mapWaypoints = buildWaypoints(mapOrigin, mapDestination, 4);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#0F1117] text-gray-100">
       {/* Header */}
-      <div className="bg-indigo-900 text-white p-6">
+      <div className="bg-white/5 border-b border-white/10 p-6 backdrop-blur-md">
         <h1 className="text-3xl font-bold flex items-center gap-2">
           <Navigation className="h-8 w-8" />
           Live Tracking Dashboard
         </h1>
-        <p className="text-indigo-200 mt-2">Monitor your shipment in real-time with interactive map</p>
+        <p className="text-gray-400 mt-2">Monitor your shipment in real-time with interactive map</p>
       </div>
 
       <div className="max-w-7xl mx-auto p-6 space-y-6">
         {/* Shipment Selector */}
         {shipments.length > 0 && (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-            <label className="block text-sm font-medium text-gray-700 mb-3">
+          <div className="bg-white/5 border border-white/10 rounded-xl p-4 backdrop-blur-md">
+            <label className="block text-sm font-medium text-gray-300 mb-3">
               Select Shipment to Track
             </label>
             <select
               value={selectedShipmentId || ''}
               onChange={(e) => setSelectedShipmentId(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full bg-[#0F1117]/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
             >
               {shipments.map((s) => (
                 <option key={s.id} value={s.id}>
-                  {s.source_location} → {s.destination_location} | {s.status || 'pending'} | #{String(s.id).slice(0, 8)}
+                  {s.source_location} → {s.destination_location} | {s.status || 'pending'}
                 </option>
               ))}
             </select>
@@ -195,7 +196,7 @@ export default function TrackingPage() {
         )}
 
         {selectedShipmentId && !tracking && selectedShipment && !selectedShipment?.assigned_vehicle && (
-          <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-lg p-4">
+          <div className="bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-lg p-4">
             This shipment is created but not assigned to a vehicle yet. Tracking will appear after admin assigns a driver and vehicle.
           </div>
         )}
@@ -203,29 +204,29 @@ export default function TrackingPage() {
         {tracking ? (
           <>
             {/* Main tracking card */}
-            <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-              <div className="bg-gradient-to-r from-indigo-600 to-blue-500 p-6 text-white">
+            <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden backdrop-blur-md">
+              <div className="bg-gradient-to-r from-violet-600/30 to-fuchsia-600/30 border-b border-white/10 p-6 backdrop-blur-md">
                 <h2 className="text-2xl font-bold mb-2">{tracking.vehicle_info}</h2>
-                <p className="text-indigo-100">Driver: {tracking.driver_name}</p>
+                <p className="text-gray-300">Driver: {tracking.driver_name}</p>
               </div>
 
               <div className="p-6 space-y-6">
                 {/* Status and Location */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm text-gray-500 uppercase font-semibold">
+                    <label className="text-sm text-gray-400 uppercase font-semibold tracking-wider">
                       Current Status
                     </label>
-                    <p className="text-2xl font-bold text-gray-900 capitalize mt-1">
+                    <p className="text-2xl font-bold text-white capitalize mt-1">
                       {tracking.status.replace('_', ' ')}
                     </p>
                   </div>
                   <div>
-                    <label className="text-sm text-gray-500 uppercase font-semibold flex items-center gap-1">
+                    <label className="text-sm text-gray-400 uppercase font-semibold tracking-wider flex items-center gap-1">
                       <MapPin className="h-4 w-4" />
                       Current Location
                     </label>
-                    <p className="text-2xl font-bold text-gray-900 mt-1">
+                    <p className="text-2xl font-bold text-white mt-1">
                       {tracking.current_location}
                     </p>
                   </div>
@@ -234,20 +235,20 @@ export default function TrackingPage() {
                 {/* Progress Bar */}
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="font-medium text-gray-700">
+                    <span className="font-medium text-gray-300">
                       {tracking.distance_traveled_km.toFixed(1)} km traveled
                     </span>
-                    <span className="font-medium text-gray-700">
+                    <span className="font-medium text-gray-300">
                       {tracking.distance_remaining_km.toFixed(1)} km remaining
                     </span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                  <div className="w-full bg-white/10 rounded-full h-3 overflow-hidden">
                     <div
-                      className="bg-gradient-to-r from-green-400 to-blue-500 h-full transition-all duration-300 ease-out"
+                      className="bg-gradient-to-r from-violet-500 to-fuchsia-500 h-full transition-all duration-300 ease-out"
                       style={{ width: `${animationProgress}%` }}
                     />
                   </div>
-                  <div className="flex justify-between text-xs text-gray-500">
+                  <div className="flex justify-between text-xs text-gray-400">
                     <span>Start</span>
                     <span>{animationProgress.toFixed(0)}%</span>
                     <span>Destination</span>
@@ -256,32 +257,32 @@ export default function TrackingPage() {
 
                 {/* Key Metrics Grid */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="bg-blue-50 rounded-lg p-4 border-l-4 border-blue-500">
-                    <label className="text-xs text-gray-600 uppercase font-semibold flex items-center gap-1">
+                  <div className="bg-white/5 rounded-xl p-4 border border-white/10 border-l-4 border-l-blue-500 backdrop-blur-md hover:bg-white/10 transition-all">
+                    <label className="text-xs text-gray-400 uppercase tracking-wider font-semibold flex items-center gap-1">
                       <Truck className="h-4 w-4" />
                       Speed
                     </label>
-                    <p className="text-2xl font-bold text-blue-600 mt-1">
+                    <p className="text-2xl font-bold text-white mt-1">
                       {tracking.speed.toFixed(0)} km/h
                     </p>
                   </div>
 
-                  <div className="bg-red-50 rounded-lg p-4 border-l-4 border-red-500">
-                    <label className="text-xs text-gray-600 uppercase font-semibold flex items-center gap-1">
+                  <div className="bg-white/5 rounded-xl p-4 border border-white/10 border-l-4 border-l-red-500 backdrop-blur-md hover:bg-white/10 transition-all">
+                    <label className="text-xs text-gray-400 uppercase tracking-wider font-semibold flex items-center gap-1">
                       <Thermometer className="h-4 w-4" />
                       Temperature
                     </label>
-                    <p className="text-2xl font-bold text-red-600 mt-1">
+                    <p className="text-2xl font-bold text-white mt-1">
                       {tracking.temperature}°C
                     </p>
                   </div>
 
-                  <div className="bg-amber-50 rounded-lg p-4 border-l-4 border-amber-500">
-                    <label className="text-xs text-gray-600 uppercase font-semibold flex items-center gap-1">
+                  <div className="bg-white/5 rounded-xl p-4 border border-white/10 border-l-4 border-l-amber-500 backdrop-blur-md hover:bg-white/10 transition-all">
+                    <label className="text-xs text-gray-400 uppercase tracking-wider font-semibold flex items-center gap-1">
                       <Clock className="h-4 w-4" />
                       ETA
                     </label>
-                    <p className="text-2xl font-bold text-amber-600 mt-1">
+                    <p className="text-2xl font-bold text-white mt-1">
                       {new Date(tracking.estimated_arrival).toLocaleTimeString([], {
                         hour: '2-digit',
                         minute: '2-digit',
@@ -289,11 +290,11 @@ export default function TrackingPage() {
                     </p>
                   </div>
 
-                  <div className="bg-emerald-50 rounded-lg p-4 border-l-4 border-emerald-500">
-                    <label className="text-xs text-gray-600 uppercase font-semibold">
+                  <div className="bg-white/5 rounded-xl p-4 border border-white/10 border-l-4 border-l-emerald-500 backdrop-blur-md hover:bg-white/10 transition-all">
+                    <label className="text-xs text-gray-400 uppercase tracking-wider font-semibold">
                       Last Update
                     </label>
-                    <p className="text-sm font-bold text-emerald-600 mt-1">
+                    <p className="text-sm font-bold text-white mt-1">
                       {new Date(tracking.last_update).toLocaleTimeString([], {
                         hour: '2-digit',
                         minute: '2-digit',
@@ -303,19 +304,19 @@ export default function TrackingPage() {
                 </div>
 
                 {/* Route Info */}
-                <div className="bg-gray-50 rounded-lg p-4 space-y-3 border-l-4 border-purple-500">
+                <div className="bg-white/5 rounded-xl p-6 space-y-3 border border-white/10 border-l-4 border-l-violet-500 backdrop-blur-md">
                   <div>
-                    <p className="text-sm text-gray-600">From</p>
-                    <p className="text-lg font-semibold text-gray-900">
+                    <p className="text-sm text-gray-400 font-medium">From</p>
+                    <p className="text-lg font-bold text-white">
                       {selectedShipment?.source_location}
                     </p>
                   </div>
                   <div className="flex justify-center">
-                    <Navigation className="h-6 w-6 text-gray-400 rotate-45" />
+                    <Navigation className="h-6 w-6 text-gray-500 rotate-45" />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">To</p>
-                    <p className="text-lg font-semibold text-gray-900">
+                    <p className="text-sm text-gray-400 font-medium">To</p>
+                    <p className="text-lg font-bold text-white">
                       {selectedShipment?.destination_location}
                     </p>
                   </div>
@@ -341,30 +342,30 @@ export default function TrackingPage() {
 
             {/* Waypoints Timeline - Legacy view */}
             {trackingEvents.length > 0 && (
-              <div className="bg-white rounded-xl shadow-lg p-6">
-                <h3 className="text-lg font-bold text-gray-900 mb-6">GPS Waypoints History</h3>
+              <div className="bg-white/5 border border-white/10 rounded-xl p-6 backdrop-blur-md">
+                <h3 className="text-xl font-bold text-white mb-6 tracking-wide">GPS Waypoints History</h3>
                 <div className="space-y-4">
                   {trackingEvents.map((event, idx) => (
                     <div key={event.id} className="flex gap-4">
                       <div className="flex flex-col items-center">
-                        <div className="w-10 h-10 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-xs">
+                        <div className="w-10 h-10 rounded-full bg-violet-600 border border-violet-400/30 text-white flex items-center justify-center font-bold text-xs">
                           {idx + 1}
                         </div>
                         {idx < trackingEvents.length - 1 && (
-                          <div className="w-1 h-12 bg-indigo-200 my-2" />
+                          <div className="w-1 h-12 bg-white/10 my-2" />
                         )}
                       </div>
                       <div className="flex-1 pb-4">
-                        <div className="bg-gray-50 rounded-lg p-4">
+                        <div className="bg-white/5 border border-white/10 rounded-xl p-4 backdrop-blur-sm">
                           <div className="flex justify-between items-start mb-2">
-                            <h4 className="font-semibold text-gray-900 capitalize">
+                            <h4 className="font-semibold text-white capitalize">
                               {event.status.replace('_', ' ')}
                             </h4>
-                            <span className="text-xs text-gray-500">
+                            <span className="text-xs text-gray-400">
                               {new Date(event.created_at).toLocaleTimeString()}
                             </span>
                           </div>
-                          <div className="text-sm text-gray-600 space-y-1">
+                          <div className="text-sm text-gray-300 space-y-1">
                             <p>
                               📍 {event.latitude.toFixed(4)}, {event.longitude.toFixed(4)}
                             </p>
@@ -383,8 +384,8 @@ export default function TrackingPage() {
             )}
           </>
         ) : (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-            <p className="text-gray-500 text-lg">
+          <div className="bg-white/5 border border-white/10 rounded-xl p-12 text-center backdrop-blur-md">
+            <p className="text-gray-400 text-lg">
               {selectedShipmentId
                 ? 'Loading tracking information...'
                 : 'No shipments to track yet'}

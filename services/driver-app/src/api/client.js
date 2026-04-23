@@ -1,4 +1,47 @@
-const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080/api/v1';
+import Constants from 'expo-constants';
+import { Platform } from 'react-native';
+
+const DEFAULT_API_PORT = process.env.EXPO_PUBLIC_API_PORT || '8085';
+
+function normalizeBaseUrl(url) {
+  return url.replace(/\/+$/, '');
+}
+
+function resolveDevHost() {
+  const hostUri =
+    Constants?.expoConfig?.hostUri ||
+    Constants?.manifest2?.extra?.expoGo?.developer?.hostUri ||
+    Constants?.manifest?.debuggerHost ||
+    '';
+
+  if (hostUri) {
+    const host = hostUri.replace(/^.*:\/\//, '').split(':')[0].split('/')[0];
+    if (host) {
+      return host;
+    }
+  }
+
+  if (typeof window !== 'undefined' && window.location?.hostname) {
+    return window.location.hostname;
+  }
+
+  return Platform.OS === 'android' ? '10.0.2.2' : 'localhost';
+}
+
+function resolveApiBase() {
+  const configuredUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
+
+  if (configuredUrl && configuredUrl.toLowerCase() !== 'auto') {
+    return normalizeBaseUrl(configuredUrl);
+  }
+
+  const host = resolveDevHost();
+  const normalizedHost = host === '127.0.0.1' && Platform.OS === 'android' ? '10.0.2.2' : host;
+
+  return `http://${normalizedHost}:${DEFAULT_API_PORT}/api/v1`;
+}
+
+const API_BASE = resolveApiBase();
 
 console.log('[API Client] Base URL:', API_BASE);
 
@@ -96,6 +139,10 @@ class ApiClient {
 
   async recordDeliveryEvent(shipmentId, payload) {
     return this.request('POST', `/status/${encodeURIComponent(shipmentId)}/deliver`, payload);
+  }
+
+  async updateLocation(shipmentId, payload) {
+    return this.request('POST', `/tracking/${encodeURIComponent(shipmentId)}/location`, payload);
   }
 }
 

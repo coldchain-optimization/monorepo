@@ -24,7 +24,6 @@ export default function LiveTrackingScreen({
         <>
           <View style={styles.card}>
             <Text style={styles.routeText}>{activeShipment.source_location} {'->'} {activeShipment.destination_location}</Text>
-            <Text style={styles.cardMeta}>Shipment ID: {activeShipment.id?.slice(0, 12)}...</Text>
           </View>
 
           {trackingStatus ? (

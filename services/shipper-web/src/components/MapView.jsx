@@ -27,7 +27,7 @@ export default function MapView({
 
     // Add high-quality tile layer (CartoDB Positron - better for urban areas and Indian cities)
     // Free tier, no API key needed, excellent accuracy for city-level mapping
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
       attribution: '© CartoDB contributors | © OpenStreetMap contributors',
       maxZoom: 20,
       minZoom: 2,
@@ -158,7 +158,7 @@ export default function MapView({
   }, [animationProgress, origin, destination, waypoints]);
 
   return (
-    <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+    <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden backdrop-blur-md">
       <div
         ref={mapContainer}
         style={{
@@ -168,12 +168,12 @@ export default function MapView({
         }}
         className="z-10"
       />
-      <div className="p-4 bg-gray-50 border-t border-gray-200">
+      <div className="p-4 bg-white/5 border-t border-white/10">
         <div className="flex justify-between items-center text-sm">
-          <span className="text-gray-600">
+          <span className="text-gray-400 font-medium">
             📍 Current Position: {latitude.toFixed(4)}, {longitude.toFixed(4)}
           </span>
-          <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold">
+          <span className="px-3 py-1 bg-violet-500/20 shadow-[0_0_10px_rgba(139,92,246,0.2)] text-violet-300 rounded-full text-xs font-semibold border border-violet-500/30">
             Progress: {animationProgress.toFixed(0)}%
           </span>
         </div>
