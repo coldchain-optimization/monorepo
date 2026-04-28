@@ -95,6 +95,7 @@ func SetupRouter(db *sql.DB, cfg *config.Config) *gin.Engine {
 	consolidationHandler := handlers.NewConsolidationHandler(consolidationService, costAllocationService, shipmentRepo, vehicleRepo)
 	adminHandler := handlers.NewAdminHandler(userRepo, shipmentRepo, vehicleRepo, driverRepo, kbRepo)
 	citiesHandler := handlers.NewCitiesHandler()
+	mlHandler := handlers.NewMLHandler(mlInferenceService)
 
 	// Apply global middleware
 	router.Use(middleware.ErrorHandlerMiddleware())
@@ -159,6 +160,7 @@ func SetupRouter(db *sql.DB, cfg *config.Config) *gin.Engine {
 		protectedGroup.GET("/tracking/:shipment_id/history", trackingHandler.GetTrackingHistory)
                 protectedGroup.POST("/tracking/:shipment_id/location", trackingHandler.UpdateLocation)
 		protectedGroup.GET("/status/:shipment_id/current", statusHandler.GetCurrentStatus)
+		protectedGroup.GET("/status/:shipment_id/history", statusHandler.GetStatusHistory)
 		protectedGroup.GET("/status/:shipment_id/summary", statusHandler.GetStatusSummary)
 		protectedGroup.POST("/status/:shipment_id/pickup", statusHandler.RecordPickupEvent)
 		protectedGroup.POST("/status/:shipment_id/deliver", statusHandler.RecordDeliveryEvent)
@@ -168,6 +170,13 @@ func SetupRouter(db *sql.DB, cfg *config.Config) *gin.Engine {
 		protectedGroup.POST("/consolidations", consolidationHandler.CreateConsolidatedTrip)
 		protectedGroup.GET("/trips/:trip_id/backhauling", consolidationHandler.GetBackhaulOpportunities)
 		protectedGroup.GET("/consolidations/metrics", consolidationHandler.GetConsolidationMetrics)
+
+		// ML Analysis proxy endpoints
+		protectedGroup.POST("/ml/price", mlHandler.GetPrice)
+		protectedGroup.POST("/ml/optimize_route", mlHandler.OptimizeRoute)
+		protectedGroup.POST("/ml/find_backhaul", mlHandler.FindBackhaul)
+		protectedGroup.POST("/ml/trip_analytics", mlHandler.TripAnalytics)
+		protectedGroup.POST("/ml/efficiency_metrics", mlHandler.EfficiencyMetrics)
 	}
 
 	// Admin routes

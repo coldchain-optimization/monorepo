@@ -4,7 +4,7 @@
 *.dll
 *.so
 *.dylib
-
+.venv
 # Go
 services/backend/vendor/
 services/backend/tmp/
@@ -80,4 +80,5 @@ yarn-error.log*
 .cache/
 .parcel-cache/
 dist/
-
+.github
+graphify-out

@@ -298,6 +298,69 @@ func computeSpoilageRiskScore(shipment *domain.Shipment) float64 {
 	return clamp(risk, 0.0, 1.0)
 }
 
+func (s *MLInferenceService) GetPrice(ctx context.Context, payload map[string]interface{}) (map[string]interface{}, error) {
+	return s.proxyRequest(ctx, "/price", payload)
+}
+
+func (s *MLInferenceService) TripAnalytics(ctx context.Context, payload map[string]interface{}) (map[string]interface{}, error) {
+	return s.proxyRequest(ctx, "/trip_analytics", payload)
+}
+
+func (s *MLInferenceService) EfficiencyMetrics(ctx context.Context, payload map[string]interface{}) (map[string]interface{}, error) {
+	return s.proxyRequest(ctx, "/efficiency_metrics", payload)
+}
+
+func (s *MLInferenceService) OptimizeRoute(ctx context.Context, payload map[string]interface{}) (map[string]interface{}, error) {
+	return s.proxyRequest(ctx, "/optimize_route", payload)
+}
+
+func (s *MLInferenceService) FindBackhaul(ctx context.Context, payload map[string]interface{}) (map[string]interface{}, error) {
+	return s.proxyRequest(ctx, "/find_backhaul", payload)
+}
+
+func (s *MLInferenceService) proxyRequest(ctx context.Context, path string, payload map[string]interface{}) (map[string]interface{}, error) {
+	if s == nil || !s.enabled {
+		return nil, fmt.Errorf("ml service disabled")
+	}
+
+	baseURL := strings.Replace(s.endpointURL, "/optimize", "", 1)
+	if baseURL == s.endpointURL {
+		baseURL = "http://localhost:8000"
+	}
+	url := baseURL + path
+
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
+	if err != nil {
+		return nil, fmt.Errorf("failed to build request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := s.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response: %w", err)
+	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, fmt.Errorf("status %d: %s", resp.StatusCode, string(respBody))
+	}
+
+	var response map[string]interface{}
+	if err := json.Unmarshal(respBody, &response); err != nil {
+		return nil, fmt.Errorf("failed to parse response: %w", err)
+	}
+	return response, nil
+}
+
 func computeShipmentDensity(shipment *domain.Shipment) float64 {
 	if shipment == nil {
 		return 0.0
