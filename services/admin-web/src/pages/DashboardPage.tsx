@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { api } from '../services/api';
+import { useEffect, useState } from "react";
+import { api } from "../services/api";
 import {
   Package,
   Truck,
@@ -7,7 +7,7 @@ import {
   UserCheck,
   TrendingUp,
   Activity,
-} from 'lucide-react';
+} from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -20,10 +20,10 @@ import {
   Pie,
   Cell,
   Legend,
-} from 'recharts';
-import type { Shipment, Vehicle } from '../types';
+} from "recharts";
+import type { Shipment, Vehicle } from "../types";
 
-const COLORS = ['#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+const COLORS = ["#8b5cf6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
 
 interface StatCardProps {
   label: string;
@@ -51,16 +51,35 @@ export default function DashboardPage() {
   const [shipments, setShipments] = useState<Shipment[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    Promise.all([
+    setError("");
+    Promise.allSettled([
       api.getStats().catch(() => ({})),
       api.getAllShipments().catch(() => []),
       api.getAllVehicles().catch(() => []),
-    ]).then(([s, sh, v]) => {
-      setStats(s);
-      setShipments(Array.isArray(sh) ? sh : []);
-      setVehicles(Array.isArray(v) ? v : []);
+    ]).then(([statsResult, shipmentsResult, vehiclesResult]) => {
+      if (statsResult.status === "rejected")
+        setError("Failed to load admin stats");
+      if (shipmentsResult.status === "rejected")
+        setError("Failed to load shipments");
+      if (vehiclesResult.status === "rejected")
+        setError("Failed to load vehicles");
+
+      setStats(statsResult.status === "fulfilled" ? statsResult.value : {});
+      setShipments(
+        shipmentsResult.status === "fulfilled" &&
+          Array.isArray(shipmentsResult.value)
+          ? shipmentsResult.value
+          : [],
+      );
+      setVehicles(
+        vehiclesResult.status === "fulfilled" &&
+          Array.isArray(vehiclesResult.value)
+          ? vehiclesResult.value
+          : [],
+      );
       setLoading(false);
     });
   }, []);
@@ -89,7 +108,7 @@ export default function DashboardPage() {
       (vehicleTypesCounts[v.vehicle_type] || 0) + 1;
   });
   const vehicleChartData = Object.entries(vehicleTypesCounts).map(
-    ([name, count]) => ({ name, count })
+    ([name, count]) => ({ name, count }),
   );
 
   return (
@@ -100,6 +119,13 @@ export default function DashboardPage() {
           Cold-chain logistics overview
         </p>
       </div>
+
+      {error && (
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+          {error}. Check backend on `http://localhost:8080/api/v1` and admin
+          login.
+        </div>
+      )}
 
       {/* Stat cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
@@ -135,7 +161,7 @@ export default function DashboardPage() {
         />
         <StatCard
           label="Booked Shipments"
-          value={shipments.filter((s) => s.status === 'booked').length}
+          value={shipments.filter((s) => s.status === "booked").length}
           icon={Activity}
           color="bg-cyan-500"
         />
@@ -163,10 +189,7 @@ export default function DashboardPage() {
                   label={({ name, value }) => `${name}: ${value}`}
                 >
                   {statusChartData.map((_, idx) => (
-                    <Cell
-                      key={idx}
-                      fill={COLORS[idx % COLORS.length]}
-                    />
+                    <Cell key={idx} fill={COLORS[idx % COLORS.length]} />
                   ))}
                 </Pie>
                 <Legend />
@@ -213,7 +236,6 @@ export default function DashboardPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left text-gray-400 border-b border-white/10">
-                
                 <th className="pb-3 font-medium">From</th>
                 <th className="pb-3 font-medium">To</th>
                 <th className="pb-3 font-medium">Type</th>
@@ -250,19 +272,19 @@ export default function DashboardPage() {
 
 function StatusBadge({ status }: { status: string }) {
   const colors: Record<string, string> = {
-    pending: 'bg-amber-500/20 text-amber-400',
-    booked: 'bg-blue-500/20 text-blue-400',
-    in_transit: 'bg-violet-500/20 text-violet-400',
-    delivered: 'bg-emerald-500/20 text-emerald-400',
-    cancelled: 'bg-red-500/20 text-red-400',
+    pending: "bg-amber-500/20 text-amber-400",
+    booked: "bg-blue-500/20 text-blue-400",
+    in_transit: "bg-violet-500/20 text-violet-400",
+    delivered: "bg-emerald-500/20 text-emerald-400",
+    cancelled: "bg-red-500/20 text-red-400",
   };
   return (
     <span
       className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-        colors[status] || 'bg-white/10 text-gray-300'
+        colors[status] || "bg-white/10 text-gray-300"
       }`}
     >
-      {status.replace('_', ' ')}
+      {status.replace("_", " ")}
     </span>
   );
 }

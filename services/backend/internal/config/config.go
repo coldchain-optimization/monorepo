@@ -36,7 +36,7 @@ func LoadConfig() *Config {
 		ServerPort:    getEnv("SERVER_PORT", "8080"),
 		Environment:   getEnv("ENVIRONMENT", "development"),
 		MLEnabled:     getEnvBool("ML_ENABLED", false),
-		MLServiceURL:  getEnv("ML_SERVICE_URL", "http://localhost:8000/optimize"),
+		MLServiceURL:  getEnv("ML_SERVICE_URL", "http://localhost:5000"),
 		MLTimeoutMs:   getEnvInt("ML_TIMEOUT_MS", 1200),
 		MLBlendWeight: getEnvFloat("ML_BLEND_WEIGHT", 0.35),
 	}

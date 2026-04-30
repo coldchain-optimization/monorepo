@@ -5,7 +5,7 @@ export interface User {
   email: string;
   first_name: string;
   last_name: string;
-  role: 'admin' | 'shipper' | 'driver';
+  role: "admin" | "shipper" | "driver";
   created_at: string;
   updated_at: string;
 }
@@ -27,7 +27,7 @@ export interface Driver {
   license_number: string;
   phone_number: string;
   rating: number;
-  role: 'transporting_body' | 'help_seeking_body';
+  role: "transporting_body" | "help_seeking_body";
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -65,7 +65,7 @@ export interface Shipment {
   days_available: number;
   time_window_start: string;
   time_window_end: string;
-  status: 'pending' | 'booked' | 'in_transit' | 'delivered' | 'cancelled';
+  status: "pending" | "booked" | "in_transit" | "delivered" | "cancelled";
   assigned_vehicle: string;
   estimated_cost: number;
   actual_cost: number;
@@ -79,7 +79,7 @@ export interface MatchResult {
   match_score: number;
   rule_score?: number;
   ml_score?: number;
-  score_source?: 'rules' | 'hybrid' | string;
+  score_source?: "rules" | "hybrid" | string;
   confidence?: number; // 0-1: model confidence in ML prediction
   explanation?: string; // Domain-specific reason for score
   estimated_cost: number;
@@ -90,6 +90,13 @@ export interface MatchResult {
   score_details?: ScoreDetails;
 }
 
+export interface SharedTenant {
+  shipper_id: string;
+  source_location: string;
+  destination_location: string;
+  shapley_allocated_cost: number;
+}
+
 export interface PricingBreak {
   base_rate: number;
   distance: number;
@@ -98,6 +105,21 @@ export interface PricingBreak {
   deviation_cost: number;
   consolidation_savings: number;
   total: number;
+  fuel_cost?: number;
+  driver_cost?: number;
+  toll_cost?: number;
+  base_cost?: number;
+  alpha_demand?: number;
+  beta_backhaul?: number;
+  gamma_dwell?: number;
+  delta_time?: number;
+  trip_price_rs?: number;
+  oracle_price?: number;
+  price_per_ton_km?: number;
+  toll_plazas?: number;
+  my_shapley_cost?: number;
+  my_original_cost?: number;
+  shared_tenants?: SharedTenant[];
 }
 
 export interface ScoreDetails {

@@ -14,12 +14,12 @@ export default function BackhaulingScreen({ backhaulOptions }) {
       <View style={{ marginTop: 8 }}>
         {backhaulOptions.length === 0 ? <Text style={styles.helper}>No options available</Text> : null}
         {backhaulOptions.map((b, idx) => (
-          <View key={`${b.vehicle_id}-${idx}`} style={styles.tableRow}>
+          <View key={`${b.vehicle_id || b.id}-${idx}`} style={styles.tableRow}>
             <View style={styles.tableNumBox}>
               <Text style={styles.tableNumText}>{idx + 1}</Text>
             </View>
             <View style={styles.tableContent}>
-              <Text style={styles.cardTitle}>Backhaul Vehicle</Text>
+              <Text style={styles.cardTitle}>{b.pickup && b.destination ? `${b.pickup} ➔ ${b.destination}` : 'Backhaul Vehicle'}</Text>
               <Text style={styles.cardMeta}>
                 Final: {pct(b.match_score).toFixed(1)}% | Rule: {pct(b.rule_score ?? b.match_score).toFixed(1)}%
                 {b.ml_score != null ? ` | ML: ${pct(b.ml_score).toFixed(1)}%${b.confidence != null ? ` (±${(b.confidence * 100).toFixed(0)}%)` : ''}` : ''}

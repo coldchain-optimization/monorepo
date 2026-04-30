@@ -1,37 +1,37 @@
-import { useState, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { Snowflake } from 'lucide-react';
+import { useState, type FormEvent } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { Snowflake } from "lucide-react";
 
 export default function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [email, setEmail] = useState("admin@looplink.com");
+  const [password, setPassword] = useState("admin123");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setLoading(true);
     try {
       await login({ email, password });
-      navigate('/');
+      navigate("/");
     } catch (err: unknown) {
-      console.error('Login error:', err);
-      let msg = 'Login failed';
-      
+      console.error("Login error:", err);
+      let msg = "Login failed";
+
       // Handle axios error
-      if (err && typeof err === 'object') {
-        if ('response' in err) {
+      if (err && typeof err === "object") {
+        if ("response" in err) {
           const axiosErr = err as { response?: { data?: { error?: string } } };
-          msg = axiosErr.response?.data?.error || 'Login failed';
-        } else if ('message' in err) {
+          msg = axiosErr.response?.data?.error || "Login failed";
+        } else if ("message" in err) {
           msg = (err as { message: string }).message;
         }
       }
-      
+
       setError(msg);
     } finally {
       setLoading(false);
@@ -83,7 +83,7 @@ export default function LoginPage() {
           </div>
 
           <p className="text-xs text-gray-400">
-            Demo login: testadmin@test.com / test@123
+            Demo login: admin@looplink.com / admin123
           </p>
 
           <button
@@ -91,7 +91,7 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full py-2.5 rounded-lg bg-violet-600 text-white font-medium hover:bg-violet-500 disabled:opacity-50 transition"
           >
-            {loading ? 'Signing in…' : 'Sign In'}
+            {loading ? "Signing in…" : "Sign In"}
           </button>
         </form>
       </div>

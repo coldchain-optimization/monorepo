@@ -80,9 +80,7 @@ func NewMLInferenceService(enabled bool, endpointURL string, timeout time.Durati
 	if timeout <= 0 {
 		timeout = 1200 * time.Millisecond
 	}
-	if strings.TrimSpace(endpointURL) == "" {
-		endpointURL = "http://localhost:8000/optimize"
-	}
+	endpointURL = normalizeMLServiceURL(endpointURL)
 	return &MLInferenceService{
 		enabled:     enabled,
 		endpointURL: endpointURL,
@@ -323,11 +321,11 @@ func (s *MLInferenceService) proxyRequest(ctx context.Context, path string, payl
 		return nil, fmt.Errorf("ml service disabled")
 	}
 
-	baseURL := strings.Replace(s.endpointURL, "/optimize", "", 1)
-	if baseURL == s.endpointURL {
-		baseURL = "http://localhost:8000"
+	baseURL := strings.TrimSuffix(strings.TrimRight(s.endpointURL, "/"), "/optimize")
+	if baseURL == "" {
+		baseURL = "http://localhost:5000"
 	}
-	url := baseURL + path
+	url := strings.TrimRight(baseURL, "/") + path
 
 	body, err := json.Marshal(payload)
 	if err != nil {
@@ -359,6 +357,18 @@ func (s *MLInferenceService) proxyRequest(ctx context.Context, path string, payl
 		return nil, fmt.Errorf("failed to parse response: %w", err)
 	}
 	return response, nil
+}
+
+func normalizeMLServiceURL(endpointURL string) string {
+	trimmed := strings.TrimSpace(endpointURL)
+	if trimmed == "" {
+		trimmed = "http://localhost:5000"
+	}
+	trimmed = strings.TrimRight(trimmed, "/")
+	if strings.HasSuffix(trimmed, "/optimize") {
+		return trimmed
+	}
+	return trimmed + "/optimize"
 }
 
 func computeShipmentDensity(shipment *domain.Shipment) float64 {

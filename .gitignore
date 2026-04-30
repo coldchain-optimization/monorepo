@@ -30,7 +30,7 @@ services/backend/tmp/
 *~
 *.sublime-project
 *.sublime-workspace
-
+env/
 # OS
 .DS_Store
 Thumbs.db

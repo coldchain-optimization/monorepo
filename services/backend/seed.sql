@@ -38,11 +38,11 @@ INSERT INTO vehicles (id, driver_id, vehicle_type, license_plate, manufacturer, 
 
 -- Create shipments
 INSERT INTO shipments (id, shipper_id, source_location, destination_location, load_weight, load_volume, load_type, required_temp, days_available, time_window_start, time_window_end, status, assigned_vehicle, estimated_cost, actual_cost, created_at, updated_at) VALUES
-('950e8400-e29b-41d4-a716-446655440000', '750e8400-e29b-41d4-a716-446655440000', 'Mumbai', 'Bangalore', 4500, 3000, 'Vegetables', 4, 2, NOW(), NOW() + INTERVAL '2 days', 'available', NULL, 15000.00, NULL, NOW(), NOW()),
-('950e8400-e29b-41d4-a716-446655440001', '750e8400-e29b-41d4-a716-446655440000', 'Pune', 'Delhi', 3000, 2000, 'Fruits', 5, 3, NOW(), NOW() + INTERVAL '3 days', 'available', NULL, 18000.00, NULL, NOW(), NOW()),
-('950e8400-e29b-41d4-a716-446655440002', '750e8400-e29b-41d4-a716-446655440001', 'Delhi', 'Jaipur', 2500, 1800, 'Dairy', 2, 1, NOW(), NOW() + INTERVAL '1 day', 'available', NULL, 8000.00, NULL, NOW(), NOW()),
-('950e8400-e29b-41d4-a716-446655440003', '750e8400-e29b-41d4-a716-446655440001', 'Bangalore', 'Hyderabad', 4000, 2800, 'Seafood', 0, 2, NOW(), NOW() + INTERVAL '2 days', 'available', NULL, 12000.00, NULL, NOW(), NOW()),
-('950e8400-e29b-41d4-a716-446655440004', '750e8400-e29b-41d4-a716-446655440000', 'Chennai', 'Kochi', 3500, 2400, 'Vegetables', 4, 2, NOW(), NOW() + INTERVAL '2 days', 'available', NULL, 14000.00, NULL, NOW(), NOW());
+('950e8400-e29b-41d4-a716-446655440000', '750e8400-e29b-41d4-a716-446655440000', 'Mumbai', 'Bangalore', 4500, 3000, 'Vegetables', 4, 2, NOW(), NOW() + INTERVAL '2 days', 'pending', NULL, 15000.00, NULL, NOW(), NOW()),
+('950e8400-e29b-41d4-a716-446655440001', '750e8400-e29b-41d4-a716-446655440000', 'Pune', 'Delhi', 3000, 2000, 'Fruits', 5, 3, NOW(), NOW() + INTERVAL '3 days', 'pending', NULL, 18000.00, NULL, NOW(), NOW()),
+('950e8400-e29b-41d4-a716-446655440002', '750e8400-e29b-41d4-a716-446655440001', 'Delhi', 'Jaipur', 2500, 1800, 'Dairy', 2, 1, NOW(), NOW() + INTERVAL '1 day', 'pending', NULL, 8000.00, NULL, NOW(), NOW()),
+('950e8400-e29b-41d4-a716-446655440003', '750e8400-e29b-41d4-a716-446655440001', 'Bangalore', 'Hyderabad', 4000, 2800, 'Seafood', 0, 2, NOW(), NOW() + INTERVAL '2 days', 'pending', NULL, 12000.00, NULL, NOW(), NOW()),
+('950e8400-e29b-41d4-a716-446655440004', '750e8400-e29b-41d4-a716-446655440000', 'Chennai', 'Kochi', 3500, 2400, 'Vegetables', 4, 2, NOW(), NOW() + INTERVAL '2 days', 'pending', NULL, 14000.00, NULL, NOW(), NOW());
 
 -- Create consignments (sub-shipments)
 INSERT INTO consignments (id, shipment_id, source_location, destination_location, load_weight, load_volume, extra_time, bonus_money, estimated_detour_km, created_at, updated_at) VALUES
